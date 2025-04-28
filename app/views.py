@@ -18,6 +18,22 @@ import os
 def index():
     return jsonify(message="This is the beginning of our API")
 
+@app.route('/api/profiles', methods=['GET'])
+def get_Profiles():
+
+@app.route('/api/profiles', methods=['POST'])
+def add_Profiles():
+
+
+@app.route('/api/profiles/{profile_id}', methods=['GET'])
+def get_Profiles_Detail():
+
+@app.route('/api/profiles/{user_id}/favourite', methods=['POST'])
+def add_Favourite():
+
+
+@app.route('/api/profiles/matches/{profile_id} ', methods=['GET'])
+def get_Specific_Profile_List():
 
 ###
 # The functions below should be applicable to all Flask apps.
