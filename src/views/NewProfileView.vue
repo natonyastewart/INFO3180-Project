@@ -94,7 +94,7 @@
   
   <script setup>
   import { ref } from 'vue';
-  import { createProfile } from '../services/api'; // You must create this API service method
+  import { createProfile } from '../services/api'; 
   
   const form = ref({
     description: '',
@@ -118,7 +118,7 @@
     try {
       await createProfile(form.value);
       alert('Profile created successfully!');
-      // You could also router.push('/somewhere') here
+      //
     } catch (error) {
       console.error(error);
       errorMessage.value = 'Something went wrong while creating profile.';
