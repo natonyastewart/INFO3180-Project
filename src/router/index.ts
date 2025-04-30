@@ -5,8 +5,8 @@ import Home from '../views/Home.vue';
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import NewProfileView from '../views/NewProfileView.vue';
-import ProfileDetailView from '..@/views/ProfileDetailView.vue';
-import FavouritesReportView from '..@/views/FavouritesReportView.vue';
+
+
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -45,16 +45,7 @@ const routes: Array<RouteRecordRaw> = [
 		name: 'NewProfile',
 		component: NewProfileView,
 	},
-	{ 
-		path: '/profiles/:profile_id', 
-		name: 'Profile',
-		component: ProfileDetailView 
-	},
-	{ 
-		path: '/profiles/favourites',
-		name: 'Favorites', 
-		component: FavouritesReportView 
-	}
+	
 	  
 ];
 
