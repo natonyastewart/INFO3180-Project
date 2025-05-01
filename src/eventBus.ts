@@ -1,8 +1,9 @@
-import mitt, { Emitter } from 'mitt';
+import type { Emitter } from 'mitt';
+import mitt from 'mitt';
 
 // Define event types
 type Events = {
-	flash: { message: string; type?: string };
+	'flash': { message: string; type?: string };
 	'auth:update': void;
 	[key: string]: any;
 };

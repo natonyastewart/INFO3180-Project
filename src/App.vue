@@ -1,27 +1,10 @@
-<template>
-	<div id="app">
-		<NavBar />
-		<div class="mt-4 py-12 w-full">
-			<div v-if="flashMessage.message" :class="`alert alert-${flashMessage.type}`" role="alert">
-				{{ flashMessage.message }}
-			</div>
-			<router-view />
-		</div>
-		<footer class="footer mt-5 py-3 bg-light">
-			<div class="text-center">
-				<p class="text-muted">JamDate &copy; {{ new Date().getFullYear() }}</p>
-			</div>
-		</footer>
-	</div>
-</template>
-
 <script lang="ts" setup>
+import type { UserData } from './store';
 import { onMounted, onUnmounted, ref } from 'vue';
-import { useStore } from 'vuex';
 
 import NavBar from './components/NavBar.vue';
 import emitter from './eventBus';
-import { UserData, key } from './store';
+import { useGlobalStore } from './store';
 
 interface FlashMessage {
 	message: string;
@@ -33,10 +16,10 @@ const flashMessage = ref<FlashMessage>({
 	type: 'info',
 });
 
-const store = useStore(key);
+const store = useGlobalStore();
 
 onMounted(() => {
-	emitter.on('flash', data => {
+	emitter.on('flash', (data) => {
 		const { message, type = 'info' } = data;
 		flashMessage.value = { message, type };
 
@@ -47,9 +30,9 @@ onMounted(() => {
 
 	const token = localStorage.getItem('token');
 	if (token) {
-		store.dispatch('setAuthenticated', true);
+		store.setAuthenticated(true);
 		const userData = JSON.parse(localStorage.getItem('user') || '{}') as UserData;
-		store.dispatch('setUser', userData);
+		store.setUser(userData);
 	}
 });
 
@@ -57,3 +40,22 @@ onUnmounted(() => {
 	emitter.off('flash');
 });
 </script>
+
+<template>
+	<div id="app">
+		<NavBar />
+		<div class="mt-4 py-12 w-full">
+			<div v-if="flashMessage.message" :class="`alert alert-${flashMessage.type}`" role="alert">
+				{{ flashMessage.message }}
+			</div>
+			<router-view />
+		</div>
+		<footer class="footer mt-5 py-3 bg-light">
+			<div class="text-center">
+				<p class="text-muted">
+					JamDate &copy; {{ new Date().getFullYear() }}
+				</p>
+			</div>
+		</footer>
+	</div>
+</template>

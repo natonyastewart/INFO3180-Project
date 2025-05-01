@@ -1,7 +1,7 @@
-import axios from 'axios';
+import type { ApiResponse, Profile, ProfileSearchParams } from './api.types';
 
-import { ApiResponse, Profile, ProfileSearchParams } from './api.types';
 import { API_URL } from '@/constants';
+import axios from 'axios';
 
 // User related API calls
 export const getUserById = async (userId: string): Promise<ApiResponse<any>> => {

@@ -1,8 +1,7 @@
+import type { LoginDto, RegisterUserDto } from '@/services/api.types';
+import type { UserData } from '@/store';
 import { API_URL } from '@/constants';
-import { LoginDto, RegisterUserDto } from '@/services/api.types';
-import { UserData } from '@/store';
 import axios from 'axios';
-
 
 export const register = async (userData: RegisterUserDto, photo?: File | null) => {
 	const data = new FormData();
@@ -69,14 +68,14 @@ export const isAuthenticated = (): boolean => {
 
 // Setup axios interceptor to include token in every request
 axios.interceptors.request.use(
-	config => {
+	(config) => {
 		const token = getToken();
 		if (token && config.headers) {
 			config.headers.Authorization = `Bearer ${token}`;
 		}
 		return config;
 	},
-	error => {
+	(error) => {
 		return Promise.reject(error);
 	},
 );

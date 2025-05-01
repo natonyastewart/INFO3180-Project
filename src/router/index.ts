@@ -1,4 +1,5 @@
-import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 
 import { isAuthenticated } from '../services/auth';
 import Home from '../views/Home.vue';
@@ -28,7 +29,7 @@ const routes: Array<RouteRecordRaw> = [
 	{
 		path: '/logout',
 		name: 'Logout',
-		redirect: to => {
+		redirect: (to) => {
 			// Clear token and user info from localStorage
 			localStorage.removeItem('token');
 			localStorage.removeItem('user');

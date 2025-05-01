@@ -1,7 +1,8 @@
 <script lang="ts" setup>
+import type { HTMLAttributes } from 'vue';
 import { cn } from '@/lib/utils';
 import { ErrorMessage } from 'vee-validate';
-import { type HTMLAttributes, toValue } from 'vue';
+import { toValue } from 'vue';
 
 import { useFormField } from './useFormField';
 
