@@ -23,4 +23,4 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 from .models import User, Profile, Favourite
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.getenv('FLASK_ENV').lower() == 'development')
