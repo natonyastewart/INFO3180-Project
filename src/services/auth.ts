@@ -3,18 +3,9 @@ import type { UserData } from '@/store';
 import { API_URL } from '@/constants';
 import axios from 'axios';
 
-export const register = async (userData: RegisterUserDto, photo?: File | null) => {
-	const data = new FormData();
-	data.append('username', userData.username);
-	data.append('password', userData.password);
-	data.append('email', userData.email);
-	data.append('name', userData.name);
-	if (photo) {
-		data.append('photo', photo);
-	}
-
+export const register = async (userData: RegisterUserDto) => {
 	try {
-		const response = await axios.post(`${API_URL}/register`, data);
+		const response = await axios.post(`${API_URL}/register`, userData);
 		return response.data;
 	} catch (error: any) {
 		throw error.response ? error.response.data : error;

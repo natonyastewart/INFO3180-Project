@@ -2,25 +2,22 @@ import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 
 import { isAuthenticated } from '../services/auth';
-import Home from '../views/Home.vue';
-import Login from '../views/Login.vue';
-import Register from '../views/Register.vue';
 
 const routes: Array<RouteRecordRaw> = [
 	{
 		path: '/',
 		name: 'Home',
-		component: Home,
+		component: () => import('../views/Home.vue'),
 	},
 	{
 		path: '/register',
 		name: 'Register',
-		component: Register,
+		component: () => import('../views/Register.vue'),
 	},
 	{
 		path: '/login',
 		name: 'Login',
-		component: Login,
+		component: () => import('../views/Login.vue'),
 	},
 	{
 		path: '/logout',
