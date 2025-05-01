@@ -1,9 +1,3 @@
-<template>
-	<button class="btn btn-outline-danger favorite-btn" @click.prevent="toggleFavorite" :class="{ active: isFavorite }">
-		<i class="fas fa-heart" :class="{ 'text-danger': isFavorite }"></i>
-	</button>
-</template>
-
 <script lang="ts">
 import { addToFavorites } from '../services/api';
 
@@ -31,6 +25,12 @@ export default {
 	},
 };
 </script>
+
+<template>
+	<button class="btn btn-outline-danger favorite-btn" :class="{ active: isFavorite }" @click.prevent="toggleFavorite">
+		<i class="fas fa-heart" :class="{ 'text-danger': isFavorite }" />
+	</button>
+</template>
 
 <style scoped>
 .favorite-btn.active {

@@ -1,5 +1,4 @@
-import { InjectionKey } from 'vue';
-import { createStore, Store } from 'vuex';
+import { defineStore } from 'pinia';
 
 // Define user data interface
 export interface UserData {
@@ -21,43 +20,32 @@ export interface RootState {
 	user: UserState;
 }
 
-// Define injection key
-export const key: InjectionKey<Store<RootState>> = Symbol();
-
-export default createStore<RootState>({
-	state: {
+export const useGlobalStore = defineStore('globalStore', {
+	state: () => ({
 		user: {
 			loggedIn: false,
 			data: null,
 		},
-	},
+	} as RootState),
 	getters: {
 		user(state): UserState {
 			return state.user;
 		},
 	},
-	mutations: {
-		SET_LOGGED_IN(state, value: boolean): void {
-			state.user.loggedIn = value;
-		},
-		SET_USER(state, data: UserData | null): void {
-			state.user.data = data;
-		},
-	},
 	actions: {
-		async setAuthenticated({ commit }, value: boolean): Promise<void> {
-			commit('SET_LOGGED_IN', value);
+		async setAuthenticated(value: boolean): Promise<void> {
+			this.user.loggedIn = value;
 		},
-		async setUser({ commit }, user: UserData | null): Promise<void> {
-			commit('SET_USER', user);
+		async setUser(user: UserData | null): Promise<void> {
+			this.user.data = user;
 		},
-		async login({ commit }, user: UserData): Promise<void> {
-			commit('SET_USER', user);
-			commit('SET_LOGGED_IN', true);
+		async login(user: UserData): Promise<void> {
+			this.user.data = user;
+			this.user.loggedIn = true;
 		},
-		async logout({ commit }): Promise<void> {
-			commit('SET_USER', null);
-			commit('SET_LOGGED_IN', false);
+		async logout(): Promise<void> {
+			this.user.data = null;
+			this.user.loggedIn = false;
 		},
 	},
 });

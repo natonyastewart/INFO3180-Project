@@ -1,57 +1,13 @@
-<template>
-	<div class="home">
-		<div class="mt-4">
-			<h1 class="mb-4">Welcome to JamDate</h1>
-
-			<div v-if="hasProfiles">
-				<search-form @search="performSearch" />
-
-				<div v-if="isSearching">
-					<h2>Search Results</h2>
-				</div>
-				<div v-else>
-					<h2>Recent Profiles</h2>
-				</div>
-
-				<div v-if="loading" class="text-center my-5">
-					<output class="spinner-border text-primary">
-						<span class="visually-hidden">Loading...</span>
-					</output>
-				</div>
-
-				<div v-else-if="profiles.length === 0" class="alert alert-info">
-					No profiles found matching your criteria.
-				</div>
-
-				<div v-else class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-					<div v-for="profile in profiles" :key="profile.id" class="col">
-						<profile-card
-							:profile="profile"
-							:is-favorite="favorites.includes(profile.id)"
-							@toggle-favorite="loadFavorites"
-						/>
-					</div>
-				</div>
-			</div>
-
-			<div v-else class="alert alert-warning">
-				<p>You need to complete your profile to see other users.</p>
-				<router-link to="/profiles/new" class="btn btn-primary">Create Profile</router-link>
-			</div>
-		</div>
-	</div>
-</template>
-
 <script setup lang="ts">
+import type { Profile, ProfileSearchParams } from '../services/api.types';
+import type { UserData } from '../store';
+
 import axios from 'axios';
 import { onMounted, ref } from 'vue';
-
 import ProfileCard from '../components/ProfileCard.vue';
 import SearchForm from '../components/SearchForm.vue';
 import { getAllProfiles, getUserFavorites, searchProfiles } from '../services/api';
-import { Profile, ProfileSearchParams } from '../services/api.types';
 import { getCurrentUser } from '../services/auth';
-import { UserData } from '../store';
 
 // Define reactive state
 const profiles = ref<Profile[]>([]);
@@ -135,3 +91,51 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 	}
 };
 </script>
+
+<template>
+	<div class="home">
+		<div class="mt-4">
+			<h1 class="mb-4">
+				Welcome to JamDate
+			</h1>
+
+			<div v-if="hasProfiles">
+				<SearchForm @search="performSearch" />
+
+				<div v-if="isSearching">
+					<h2>Search Results</h2>
+				</div>
+				<div v-else>
+					<h2>Recent Profiles</h2>
+				</div>
+
+				<div v-if="loading" class="text-center my-5">
+					<output class="spinner-border text-primary">
+						<span class="visually-hidden">Loading...</span>
+					</output>
+				</div>
+
+				<div v-else-if="profiles.length === 0" class="alert alert-info">
+					No profiles found matching your criteria.
+				</div>
+
+				<div v-else class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+					<div v-for="profile in profiles" :key="profile.id" class="col">
+						<ProfileCard
+							:profile="profile"
+							:is-favorite="favorites.includes(profile.id)"
+							@toggle-favorite="loadFavorites"
+						/>
+					</div>
+				</div>
+			</div>
+
+			<div v-else class="alert alert-warning">
+				<p>You need to complete your profile to see other users.</p>
+				<router-link to="/profiles/new" class="btn btn-primary">
+					Create Profile
+				</router-link>
+			</div>
+		</div>
+	</div>
+</template>
