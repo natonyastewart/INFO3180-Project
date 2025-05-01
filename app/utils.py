@@ -1,0 +1,233 @@
+import jwt
+import datetime
+from functools import wraps
+from flask import request, jsonify, g, current_app
+from .models import User
+
+def generate_response(success=True, message=None, data=None, errors=None):
+    """
+    Generate a standardized API response format
+    
+    Args:
+        success (bool): Whether the request was successful
+        message (str, optional): Message to include in the response
+        data (any, optional): Data to include in the response
+        errors (dict, optional): Dictionary of field-level errors
+        
+    Returns:
+        dict: Standardized API response
+    """
+    response = {"success": success}
+    
+    if message is not None:
+        response["message"] = message
+        
+    if data is not None:
+        response["data"] = data
+        
+    if errors is not None:
+        response["errors"] = errors
+        
+    return response
+
+def generate_token(user_id):
+    """
+    Generate a JWT token for authentication
+    
+    Args:
+        user_id (int): ID of the user to generate token for
+        
+    Returns:
+        str: JWT token
+    """
+    payload = {
+        'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=current_app.config['JWT_EXPIRATION']),
+        'iat': datetime.datetime.now(datetime.timezone.utc),
+        'sub': user_id
+    }
+    
+    return jwt.encode(
+        payload,
+        current_app.config['JWT_SECRET'],
+        algorithm='HS256'
+    )
+
+def decode_token(token):
+    """
+    Decode a JWT token
+    
+    Args:
+        token (str): JWT token to decode
+        
+    Returns:
+        dict: Decoded token payload or None if invalid
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            current_app.config['JWT_SECRET'],
+            algorithms=['HS256']
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def token_required(f):
+    """
+    Decorator for routes that require authentication
+    
+    Args:
+        f (function): Function to wrap
+        
+    Returns:
+        function: Wrapped function
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        # Get token from Authorization header
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        
+        if not token:
+            return jsonify(generate_response(
+                success=False,
+                message="Authentication token is missing",
+                errors={"auth": ["Authentication token is required"]}
+            )), 401
+        
+        # Decode token
+        payload = decode_token(token)
+        if not payload:
+            return jsonify(generate_response(
+                success=False,
+                message="Invalid or expired token",
+                errors={"auth": ["Invalid or expired token"]}
+            )), 401
+        
+        # Get user from database
+        user = User.query.get(payload['sub'])
+        if not user:
+            return jsonify(generate_response(
+                success=False,
+                message="User not found",
+                errors={"auth": ["User not found"]}
+            )), 401
+        
+        # Store user in flask g object for use in route function
+        g.current_user = user
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+def has_profile_required(f):
+    """
+    Decorator for routes that require a user to have at least one profile
+    
+    Args:
+        f (function): Function to wrap
+        
+    Returns:
+        function: Wrapped function
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = g.current_user
+        
+        if not user.profiles:
+            return jsonify(generate_response(
+                success=False,
+                message="Profile required",
+                errors={"profile": ["You must create a profile before accessing this feature"]}
+            )), 403
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+def profile_is_complete(profile):
+    """
+    Check if a profile has all required fields filled out
+    
+    Args:
+        profile (Profile): Profile to check
+        
+    Returns:
+        bool: True if profile is complete, False otherwise
+    """
+    required_fields = [
+        'description', 'parish', 'biography', 'sex', 'race', 
+        'birth_year', 'height', 'fav_cuisine', 'fav_colour', 
+        'fav_school_sibject', 'political', 'religious', 'family_oriented'
+    ]
+    
+    for field in required_fields:
+        if getattr(profile, field) is None:
+            return False
+    
+    return True
+
+def validate_profile_fields(data):
+    """
+    Validate profile fields
+    
+    Args:
+        data (dict): Profile data to validate
+        
+    Returns:
+        dict: Dictionary of field-level errors or None if valid
+    """
+    errors = {}
+    required_fields = [
+        'description', 'parish', 'biography', 'sex', 'race', 
+        'birth_year', 'height', 'fav_cuisine', 'fav_colour', 
+        'fav_school_sibject', 'political', 'religious', 'family_oriented'
+    ]
+    
+    for field in required_fields:
+        if field not in data or data[field] is None or data[field] == "":
+            if field not in errors:
+                errors[field] = []
+            errors[field].append(f"{field} is required")
+    
+    # Validate numeric fields
+    if 'birth_year' in data and data['birth_year'] is not None:
+        try:
+            year = int(data['birth_year'])
+            current_year = datetime.datetime.now(datetime.timezone.utc).year
+            if year < 1900 or year > current_year - 18:  # Ensuring user is at least 18
+                if 'birth_year' not in errors:
+                    errors['birth_year'] = []
+                errors['birth_year'].append("Birth year must be between 1900 and " + str(current_year - 18))
+        except (ValueError, TypeError):
+            if 'birth_year' not in errors:
+                errors['birth_year'] = []
+            errors['birth_year'].append("Birth year must be a valid number")
+    
+    if 'height' in data and data['height'] is not None:
+        try:
+            height = float(data['height'])
+            if height <= 0 or height > 300:  # Reasonable height range in cm
+                if 'height' not in errors:
+                    errors['height'] = []
+                errors['height'].append("Height must be a positive number less than 300")
+        except (ValueError, TypeError):
+            if 'height' not in errors:
+                errors['height'] = []
+            errors['height'].append("Height must be a valid number")
+    
+    # Validate boolean fields
+    boolean_fields = ['political', 'religious', 'family_oriented']
+    for field in boolean_fields:
+        if field in data and data[field] is not None:
+            if not isinstance(data[field], bool):
+                if field not in errors:
+                    errors[field] = []
+                errors[field].append(f"{field} must be a boolean value")
+    
+    return errors if errors else None
