@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import Card from '@/components/ui/card/Card.vue';
+import CardContent from '@/components/ui/card/CardContent.vue';
+import CardHeader from '@/components/ui/card/CardHeader.vue';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { loginDto } from '@/services/api.types';
 import { toTypedSchema } from '@vee-validate/zod';
+
 import { useForm } from 'vee-validate';
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-
 import emitter from '../eventBus';
 import { login } from '../services/auth';
 
@@ -47,22 +50,20 @@ const onSubmit = form.handleSubmit(async (values) => {
 </script>
 
 <template>
-	<div class="login">
+	<main>
 		<div class="mt-5">
-			<div class="row justify-content-center">
-				<div class="col-md-6">
-					<div class="card">
-						<div class="card-header bg-primary text-white">
-							<h3 class="mb-0">
-								Login to JamDate
-							</h3>
-						</div>
-						<div class="card-body">
-							<div v-if="error" class="alert alert-danger">
+			<div class="flex justify-center">
+				<div>
+					<Card>
+						<CardHeader class="text-xl font-bold">
+							Login to JamDate
+						</CardHeader>
+						<CardContent>
+							<div v-if="error" class="p-4 border border-danger rounded-lg bg-danger/10 text-danger mb-4">
 								{{ error }}
 							</div>
 
-							<form @submit="onSubmit">
+							<form class="space-y-6" @submit="onSubmit">
 								<FormField v-slot="{ componentField }" name="username">
 									<FormItem>
 										<FormLabel>Username</FormLabel>
@@ -104,14 +105,16 @@ const onSubmit = form.handleSubmit(async (values) => {
 							</form>
 
 							<div class="mt-3 text-center">
-								Don't have an account? <router-link to="/register">
-									Register here
-								</router-link>
+								Don't have an account? <span class="text-primary">
+									<router-link to="/register">
+										Register here
+									</router-link>
+								</span>
 							</div>
-						</div>
-					</div>
+						</CardContent>
+					</Card>
 				</div>
 			</div>
 		</div>
-	</div>
+	</main>
 </template>
