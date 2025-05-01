@@ -52,13 +52,13 @@ const routes: Array<RouteRecordRaw> = [
 		component: ProfileDetailView,
 	},
 	{
-		path: '/favorites',
+		path: '/profiles/favorites',
 		name: 'Favorites',
 		component: FavoritesReportView,
 	},
 	
 	{
-		path: '/profile/me',
+		path: '/profiles/me',
 		name: 'UserProfile',
 		component: UserProfileView,
 	}
