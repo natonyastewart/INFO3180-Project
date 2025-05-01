@@ -5,49 +5,65 @@ import axios from 'axios';
 
 // User related API calls
 export const getUserById = async (userId: string): Promise<ApiResponse<any>> => {
-	const response = await axios.get(`${API_URL}/users/${userId}`);
+	const response = await axios.get<ApiResponse<any>>(`${API_URL}/users/${userId}`);
 	return response.data;
 };
 
 export const getUserFavorites = async (userId: string): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get(`${API_URL}/users/${userId}/favourites`);
+	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/users/${userId}/favourites`);
 	return response.data;
 };
 
 export const getTopFavorites = async (count = 20): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get(`${API_URL}/users/favourties/${count}`);
+	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/users/favourties/${count}`);
 	return response.data;
 };
 
 // Profile related API calls
 export const getAllProfiles = async (): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get(`${API_URL}/profiles`);
+	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/profiles`);
+	return response.data;
+};
+
+export const getUserProfiles = async (userId: string) => {
+	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/profiles/user/${userId}`);
 	return response.data;
 };
 
 export const getProfileById = async (profileId: string): Promise<ApiResponse<Profile>> => {
-	const response = await axios.get(`${API_URL}/profiles/${profileId}`);
+	const response = await axios.get<ApiResponse<Profile>>(`${API_URL}/profiles/${profileId}`);
 	return response.data;
 };
 
 export const createProfile = async (profileData: Partial<Profile>): Promise<ApiResponse<Profile>> => {
-	const response = await axios.post(`${API_URL}/profiles`, profileData);
+	const response = await axios.post<ApiResponse<Profile>>(`${API_URL}/profiles`, profileData);
+	return response.data;
+};
+
+export const uploadProfilePhoto = async (profileId: string, photo: File): Promise<ApiResponse<any>> => {
+	const formData = new FormData();
+	formData.append('photo', photo);
+	const response = await axios.post<ApiResponse<any>>(`${API_URL}/profiles/${profileId}/photo`, formData, {
+		headers: {
+			'Content-Type': 'multipart/form-data',
+		},
+	});
 	return response.data;
 };
 
 export const addToFavorites = async (userId: string): Promise<ApiResponse<any>> => {
-	const response = await axios.post(`${API_URL}/profiles/${userId}/favourite`);
+	const response = await axios.post<ApiResponse<any>>(`${API_URL}/profiles/${userId}/favourite`);
 	return response.data;
 };
 
 export const getProfileMatches = async (profileId: string): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get(`${API_URL}/profiles/matches/${profileId}`);
+	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/profiles/matches/${profileId}`);
 	return response.data;
 };
 
 // Search profiles
 export const searchProfiles = async (searchParams: ProfileSearchParams): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get(`${API_URL}/search`, {
+	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/search`, {
 		params: searchParams,
 	});
 	return response.data;

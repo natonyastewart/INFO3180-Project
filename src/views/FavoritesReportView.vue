@@ -1,52 +1,99 @@
-<template>
-    <div class="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
-      <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Your Favourite Profiles</h1>
-  
-      <div v-if="favourites.length" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <div
-                    v-for="profile in favourites"
-                    :key="profile.id"
-                    class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow hover:shadow-md transition">
-          
-                <img
-                    :src="profile.photo || 'https://via.placeholder.com/150'"
-                    alt="Profile Picture"
-                    class="w-full h-48 object-cover rounded-md mb-4"/>
+<script setup lang="ts">
+import type { Profile } from '@/services/api.types';
+import Card from '@/components/ui/card/Card.vue';
+import CardContent from '@/components/ui/card/CardContent.vue';
+import CardHeader from '@/components/ui/card/CardHeader.vue';
+import { getUserFavorites } from '@/services/api';
+import { useGlobalStore } from '@/store';
+import { onMounted, ref } from 'vue';
+import emitter from '../eventBus';
 
-                        <h2 class="text-xl font-semibold mb-2">{{ profile.name }}</h2>
-                        <p class="text-sm text-gray-600 mb-1"><strong>Sex:</strong> {{ profile.sex }}</p>
-                        <p class="text-sm text-gray-600 mb-1"><strong>Race:</strong> {{ profile.race }}</p>
-                        <p class="text-sm text-gray-600 mb-1"><strong>Parish:</strong> {{ profile.parish }}</p>
-  
-                                <router-link
-                                    :to="`/profiles/${profile.id}`"
-                                    class="inline-block mt-4 text-blue-600 hover:underline font-medium">
-                                    View More Details →
-                                </router-link>
-                                </div>
-                            </div>
-  
-                                <div v-else class="text-center text-gray-500 text-lg">
-                                    No favourites found.
-                                </div>
-                                </div>
-                            </template>
-                            
-  <script setup lang="ts">
-  import { ref, onMounted } from 'vue'
-  // import { getFavourites } from '@/services/api' // Uncomment when api is ready !!!
-  import type { Profile } from '@/services/api.types'
-  
-  const favourites = ref<Profile[]>([])
-  
-  const fetchFavourites = async () => {
-    try {
-      // favourites.value = await getFavourites() // uncomment and replace with api stuff !!!
-    } catch (error) {
-      console.error('Failed to load favourites:', error)
-    }
-  }
-  
-  onMounted(fetchFavourites)
-  </script>
-  
+const globalStorage = useGlobalStore();
+const favourites = ref<Profile[]>([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
+
+const fetchFavourites = async () => {
+	loading.value = true;
+	error.value = null;
+
+	try {
+		favourites.value = (await getUserFavorites(globalStorage.user.data!.id!)).data ?? [];
+	} catch (err: any) {
+		console.error('Failed to load favourites:', err);
+		error.value = err.message || 'Failed to load favourites';
+
+		emitter.emit('flash', {
+			message: 'Failed to load favourites',
+			type: 'error',
+		});
+	} finally {
+		loading.value = false;
+	}
+};
+
+onMounted(fetchFavourites);
+</script>
+
+<template>
+	<main>
+		<div class="mt-5">
+			<Card class="max-w-5xl mx-auto">
+				<CardHeader class="text-xl font-bold text-center">
+					Your Favourite Profiles
+				</CardHeader>
+				<CardContent>
+					<div v-if="error" class="p-4 border border-destructive rounded-lg bg-destructive/10 text-destructive mb-4">
+						{{ error }}
+					</div>
+
+					<div v-if="loading" class="text-center p-8">
+						<div class="spinner-border" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
+					</div>
+
+					<div v-else-if="favourites.length" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+						<Card
+							v-for="profile in favourites"
+							:key="profile.id"
+							class="bg-background hover:shadow-md transition"
+						>
+							<CardContent class="p-4">
+								<img
+									:src="profile.photo || 'https://via.placeholder.com/150'"
+									alt="Profile Picture"
+									class="w-full h-48 object-cover rounded-md mb-4"
+								>
+
+								<h2 class="text-xl font-semibold mb-2">
+									{{ profile.name }}
+								</h2>
+								<p class="text-sm text-muted-foreground mb-1">
+									<strong>Sex:</strong> {{ profile.sex }}
+								</p>
+								<p class="text-sm text-muted-foreground mb-1">
+									<strong>Race:</strong> {{ profile.race }}
+								</p>
+								<p class="text-sm text-muted-foreground mb-1">
+									<strong>Parish:</strong> {{ profile.parish }}
+								</p>
+
+								<router-link
+									:to="`/profiles/${profile.id}`"
+									class="inline-block mt-4 text-primary hover:underline font-medium"
+								>
+									View More Details →
+								</router-link>
+							</CardContent>
+						</Card>
+					</div>
+
+					<div v-else class="text-center text-muted-foreground text-lg p-8">
+						No favourites found.
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+	</main>
+</template>

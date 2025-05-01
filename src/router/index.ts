@@ -1,30 +1,24 @@
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
-
 import { isAuthenticated } from '../services/auth';
-import Home from '../views/Home.vue';
-import Login from '../views/Login.vue';
-import Register from '../views/Register.vue';
-import NewProfileView from '../views/NewProfileView.vue';
-import ProfileDetailView from '@/views/ProfileDetailView.vue';
-import FavoritesReportView from '@/views/FavoritesReportView.vue';
-import UserProfileView from '@/views/UserProfileView.vue';
 
 const routes: Array<RouteRecordRaw> = [
 	{
 		path: '/',
 		name: 'Home',
-		component: Home,
+		component: () => import('../views/Home.vue'),
 	},
 	{
 		path: '/register',
 		name: 'Register',
-		component: Register,
+		component: () => import('../views/Register.vue'),
+		meta: { requiresNoAuth: true },
 	},
 	{
 		path: '/login',
 		name: 'Login',
-		component: Login,
+		component: () => import('../views/Login.vue'),
+		meta: { requiresNoAuth: true },
 	},
 	{
 		path: '/logout',
@@ -35,34 +29,34 @@ const routes: Array<RouteRecordRaw> = [
 			localStorage.removeItem('user');
 			return { path: '/login' };
 		},
-	},
-	{
-		path: '/about',
-		name: 'About',
-		component: () => import('../views/AboutView.vue'),
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/profiles/new',
 		name: 'NewProfile',
-		component: NewProfileView,
+		component: () => import('../views/NewProfileView.vue'),
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/profiles/:id',
 		name: 'ProfileDetail',
-		component: ProfileDetailView,
+		component: () => import('@/views/ProfileDetailView.vue'),
+		meta: { requiresAuth: true },
 	},
 	{
 		path: '/profiles/favorites',
 		name: 'Favorites',
-		component: FavoritesReportView,
+		component: () => import('@/views/FavoritesReportView.vue'),
+		meta: { requiresAuth: true },
 	},
-	
+
 	{
 		path: '/profiles/me',
 		name: 'UserProfile',
-		component: UserProfileView,
-	}
-	  
+		component: () => import('@/views/UserProfileView.vue'),
+		meta: { requiresAuth: true },
+	},
+
 ];
 
 const router = createRouter({
@@ -72,16 +66,18 @@ const router = createRouter({
 
 // Navigation guard to check if user is authenticated
 router.beforeEach((to, from, next) => {
-	if (to.matched.some(record => record.meta.requiresAuth)) {
+	const authenticated = isAuthenticated();
+	if (to.matched.some(record => record.meta.requiresNoAuth)
+		&& authenticated) {
+		next({
+			path: '/',
+		});
+	} else if (to.matched.some(record => record.meta.requiresAuth) && !authenticated) {
 		// This route requires auth, check if logged in
-		if (!isAuthenticated()) {
-			next({
-				path: '/login',
-				query: { redirect: to.fullPath },
-			});
-		} else {
-			next();
-		}
+		next({
+			path: '/login',
+			query: { redirect: to.fullPath },
+		});
 	} else {
 		next();
 	}

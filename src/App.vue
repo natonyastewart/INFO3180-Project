@@ -50,12 +50,5 @@ onUnmounted(() => {
 			</div>
 			<router-view />
 		</div>
-		<footer class="footer mt-5 py-3 bg-light">
-			<div class="text-center">
-				<p class="text-muted">
-					JamDate &copy; {{ new Date().getFullYear() }}
-				</p>
-			</div>
-		</footer>
 	</div>
 </template>

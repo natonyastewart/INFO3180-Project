@@ -1,162 +1,266 @@
-<template>
-  <div class="max-w-3xl mx-auto mt-10 p-8 bg-white rounded-lg shadow-lg">
-    <h1 class="text-3xl font-bold text-center mb-8">Create Your Profile</h1>
+<script setup lang="ts">
+import { Button } from '@/components/ui/button';
+import Card from '@/components/ui/card/Card.vue';
+import CardContent from '@/components/ui/card/CardContent.vue';
+import CardHeader from '@/components/ui/card/CardHeader.vue';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { createProfileDto } from '@/services/api.types';
+import { toTypedSchema } from '@vee-validate/zod';
+import { useForm } from 'vee-validate';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import emitter from '../eventBus';
+import { createProfile, uploadProfilePhoto } from '../services/api';
 
-              <form @submit.prevent="submitProfile" class="space-y-6">
+const formSchema = toTypedSchema(createProfileDto);
 
-                        <!-- Profile Image Upload -->
-                        <div class="space-y-2">
-                          <label class="block font-medium">Profile Picture</label>
-                          <input type="file" @change="handleFileUpload" accept="image/*" />
-                        </div>
+const loading = ref(false);
+const error = ref<string | null>(null);
+const router = useRouter();
+const selectedFile = ref<File | null>(null);
 
-                        <!-- Description -->
-                        <div class="space-y-2">
-                          <label class="block font-medium">Description</label>
-                          <input v-model="form.description" class="w-full border rounded p-2" placeholder="Enter description" />
-                        </div>
+const form = useForm({
+	validationSchema: formSchema,
+	initialValues: {
+		description: '',
+		parish: '',
+		biography: '',
+		sex: '',
+		race: '',
+		birth_year: new Date().getFullYear() - 30,
+		height: 65,
+		fav_cuisine: '',
+		fav_colour: '',
+		fav_school_subject: '',
+		political: false,
+		religious: false,
+		family_oriented: false,
+	},
+});
 
-                        <!-- Parish -->
-                        <div class="space-y-2">
-                          <label class="block font-medium">Parish</label>
-                          <input v-model="form.parish" class="w-full border rounded p-2" placeholder="Enter parish" />
-                        </div>
+const handleFileUpload = (event: Event) => {
+	const input = event.target as HTMLInputElement;
+	const file = input.files?.[0];
+	if (file) {
+		selectedFile.value = file;
+	}
+};
 
-                        <!-- Biography -->
-                        <div class="space-y-2">
-                          <label class="block font-medium">Biography</label>
-                          <textarea v-model="form.biography" class="w-full border rounded p-2" placeholder="Tell us about yourself" />
-                        </div>
+const onSubmit = form.handleSubmit(async (values) => {
+	loading.value = true;
+	error.value = null;
 
-                        <!-- Sex & Race -->
-                        <div class="grid grid-cols-2 gap-4">
-                          <div class="space-y-2">
-                            <label class="block font-medium">Sex</label>
-                            <select v-model="form.sex" class="w-full border rounded p-2">
-                              <option disabled value="">Select your sex</option>
-                              <option>Male</option>
-                              <option>Female</option>
-                              <option>Non-Binary</option>
-                              <option>Prefer Not To Say</option>
-                              <option>Other</option>
-                            </select>
-                          </div>
+	try {
+		const res = await createProfile(values);
 
-                          <div class="space-y-2">
-                            <label class="block font-medium">Race</label>
-                            <input v-model="form.race" class="w-full border rounded p-2" placeholder="Enter race" />
-                          </div>
-                        </div>
+		if (selectedFile.value && res.data) {
+			await uploadProfilePhoto(res.data.id, selectedFile.value);
+		}
+		// Show success message
+		emitter.emit('flash', {
+			message: 'Profile created successfully!',
+			type: 'success',
+		});
 
-                        <!-- Birth Year & Height -->
-                        <div class="grid grid-cols-2 gap-4">
-                          <div class="space-y-2">
-                            <label class="block font-medium">Birth Year</label>
-                            <input v-model="form.birth_year" type="number" min="1900" max="2025" class="w-full border rounded p-2" />
-                          </div>
-
-                          <div class="space-y-2">
-                            <label class="block font-medium">Height (inches)</label>
-                            <input v-model="form.height" type="number" step="0.1" class="w-full border rounded p-2" />
-                          </div>
-                        </div>
-
-                        <!-- Cuisine & Colour -->
-                        <div class="grid grid-cols-2 gap-4">
-                          <div class="space-y-2">
-                            <label class="block font-medium">Favorite Cuisine</label>
-                            <input v-model="form.fav_cuisine" class="w-full border rounded p-2" />
-                          </div>
-
-                          <div class="space-y-2">
-                            <label class="block font-medium">Favorite Colour</label>
-                            <input v-model="form.fav_colour" class="w-full border rounded p-2" />
-                          </div>
-                        </div>
-
-                        <!-- Favorite School Subject -->
-                        <div class="space-y-2">
-                          <label class="block font-medium">Favorite School Subject</label>
-                          <input v-model="form.fav_school_subject" class="w-full border rounded p-2" />
-                        </div>
-
-                        <!-- Checkboxes -->
-                        <div class="flex flex-wrap gap-6 mt-6">
-                          <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="form.political" />
-                            <span>Political</span>
-                          </label>
-                          <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="form.religious" />
-                            <span>Religious</span>
-                          </label>
-                          <label class="flex items-center space-x-2">
-                            <input type="checkbox" v-model="form.family_oriented" />
-                            <span>Family Oriented</span>
-                          </label>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded">
-                          Submit Profile
-                        </button>
-
-                        <!-- Error Message -->
-                        <div v-if="errorMessage" class="text-red-500 mt-4 text-center">
-                          {{ errorMessage }}
-                        </div>
-    </form>
-  </div>
-</template>
-
-<script setup>
-import { ref } from 'vue'
-import { createProfile } from '../services/api'
-
-const form = ref({
-  description: '',
-  parish: '',
-  biography: '',
-  sex: '',
-  race: '',
-  birth_year: '',
-  height: '',
-  fav_cuisine: '',
-  fav_colour: '',
-  fav_school_subject: '',
-  political: false,
-  religious: false,
-  family_oriented: false,
-})
-
-const selectedFile = ref(null)
-const errorMessage = ref('')
-
-const handleFileUpload = (event) => {
-  const file = event.target.files?.[0]
-  if (file) {
-    selectedFile.value = file
-  }
-}
-
-const submitProfile = async () => {
-  try {
-    const formData = new FormData()
-    for (const key in form.value) {
-      formData.append(key, form.value[key])
-    }
-
-    if (selectedFile.value) {
-      formData.append('photo', selectedFile.value)
-    }
-
-    // backend FormData
-    await createProfile(formData)
-
-    alert('Profile created successfully!')
-  } catch (error) {
-    console.error(error)
-    errorMessage.value = 'Something went wrong while creating your profile.'
-  }
-}
+		// Redirect to profiles page
+		router.push('/profiles');
+	} catch (err: any) {
+		error.value = err.message || 'Something went wrong while creating your profile.';
+	} finally {
+		loading.value = false;
+	}
+});
 </script>
+
+<template>
+	<main>
+		<div class="mt-5">
+			<div class="flex justify-center">
+				<Card class="w-full max-w-3xl">
+					<CardHeader class="text-xl font-bold">
+						Create Your Profile
+					</CardHeader>
+					<CardContent>
+						<div v-if="error" class="p-4 border border-destructive rounded-lg bg-destructive/10 text-destructive mb-4">
+							{{ error }}
+						</div>
+
+						<form class="space-y-6" @submit="onSubmit">
+							<!-- Profile Image Upload -->
+							<div class="space-y-2">
+								<FormLabel>Profile Picture</FormLabel>
+								<Input type="file" accept="image/*" @change="handleFileUpload" />
+							</div>
+
+							<!-- Description -->
+							<FormField v-slot="{ componentField }" name="description">
+								<FormItem>
+									<FormLabel>Description</FormLabel>
+									<FormControl>
+										<Input type="text" placeholder="Enter description" v-bind="componentField" />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							</FormField>
+
+							<!-- Parish -->
+							<FormField v-slot="{ componentField }" name="parish">
+								<FormItem>
+									<FormLabel>Parish</FormLabel>
+									<FormControl>
+										<Input type="text" placeholder="Enter parish" v-bind="componentField" />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							</FormField>
+
+							<!-- Biography -->
+							<FormField v-slot="{ componentField }" name="biography">
+								<FormItem>
+									<FormLabel>Biography</FormLabel>
+									<FormControl>
+										<textarea
+											v-bind="componentField"
+											class="flex h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+											placeholder="Tell us about yourself"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							</FormField>
+
+							<!-- Sex & Race -->
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormField v-slot="{ componentField }" name="sex">
+									<FormItem>
+										<FormLabel>Sex</FormLabel>
+										<FormControl>
+											<select
+												v-bind="componentField"
+												class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+											>
+												<option disabled value="">
+													Select your sex
+												</option>
+												<option>Male</option>
+												<option>Female</option>
+												<option>Non-Binary</option>
+												<option>Prefer Not To Say</option>
+												<option>Other</option>
+											</select>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+
+								<FormField v-slot="{ componentField }" name="race">
+									<FormItem>
+										<FormLabel>Race</FormLabel>
+										<FormControl>
+											<Input type="text" placeholder="Enter race" v-bind="componentField" />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+							</div>
+
+							<!-- Birth Year & Height -->
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormField v-slot="{ componentField }" name="birth_year">
+									<FormItem>
+										<FormLabel>Birth Year</FormLabel>
+										<FormControl>
+											<Input type="number" min="1900" :max="new Date().getFullYear()" v-bind="componentField" />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+
+								<FormField v-slot="{ componentField }" name="height">
+									<FormItem>
+										<FormLabel>Height (inches)</FormLabel>
+										<FormControl>
+											<Input type="number" step="0.1" v-bind="componentField" />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+							</div>
+
+							<!-- Cuisine & Colour -->
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<FormField v-slot="{ componentField }" name="fav_cuisine">
+									<FormItem>
+										<FormLabel>Favorite Cuisine</FormLabel>
+										<FormControl>
+											<Input type="text" v-bind="componentField" />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+
+								<FormField v-slot="{ componentField }" name="fav_colour">
+									<FormItem>
+										<FormLabel>Favorite Colour</FormLabel>
+										<FormControl>
+											<Input type="text" v-bind="componentField" />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+							</div>
+
+							<!-- Favorite School Subject -->
+							<FormField v-slot="{ componentField }" name="fav_school_subject">
+								<FormItem>
+									<FormLabel>Favorite School Subject</FormLabel>
+									<FormControl>
+										<Input type="text" v-bind="componentField" />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							</FormField>
+
+							<!-- Checkboxes -->
+							<div class="flex flex-wrap gap-6 mt-6">
+								<FormField v-slot="{ componentField }" name="political">
+									<FormItem class="flex items-center space-x-2">
+										<FormControl>
+											<input type="checkbox" v-bind="componentField">
+										</FormControl>
+										<FormLabel>Political</FormLabel>
+									</FormItem>
+								</FormField>
+
+								<FormField v-slot="{ componentField }" name="religious">
+									<FormItem class="flex items-center space-x-2">
+										<FormControl>
+											<input type="checkbox" v-bind="componentField">
+										</FormControl>
+										<FormLabel>Religious</FormLabel>
+									</FormItem>
+								</FormField>
+
+								<FormField v-slot="{ componentField }" name="family_oriented">
+									<FormItem class="flex items-center space-x-2">
+										<FormControl>
+											<input type="checkbox" v-bind="componentField">
+										</FormControl>
+										<FormLabel>Family Oriented</FormLabel>
+									</FormItem>
+								</FormField>
+							</div>
+
+							<!-- Submit Button -->
+							<Button type="submit" class="w-full" :disabled="loading">
+								<span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status" />
+								Submit Profile
+							</Button>
+						</form>
+					</CardContent>
+				</Card>
+			</div>
+		</div>
+	</main>
+</template>
