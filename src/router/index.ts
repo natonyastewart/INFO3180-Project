@@ -1,6 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
-
 import { isAuthenticated } from '../services/auth';
 
 const routes: Array<RouteRecordRaw> = [
@@ -13,11 +12,13 @@ const routes: Array<RouteRecordRaw> = [
 		path: '/register',
 		name: 'Register',
 		component: () => import('../views/Register.vue'),
+		meta: { requiresNoAuth: true },
 	},
 	{
 		path: '/login',
 		name: 'Login',
 		component: () => import('../views/Login.vue'),
+		meta: { requiresNoAuth: true },
 	},
 	{
 		path: '/logout',
@@ -28,12 +29,34 @@ const routes: Array<RouteRecordRaw> = [
 			localStorage.removeItem('user');
 			return { path: '/login' };
 		},
+		meta: { requiresAuth: true },
 	},
 	{
-		path: '/about',
-		name: 'About',
-		component: () => import('../views/AboutView.vue'),
+		path: '/profiles/new',
+		name: 'NewProfile',
+		component: () => import('../views/NewProfileView.vue'),
+		meta: { requiresAuth: true },
 	},
+	{
+		path: '/profiles/:id',
+		name: 'ProfileDetail',
+		component: () => import('@/views/ProfileDetailView.vue'),
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/profiles/favorites',
+		name: 'Favorites',
+		component: () => import('@/views/FavoritesReportView.vue'),
+		meta: { requiresAuth: true },
+	},
+
+	{
+		path: '/profiles/me',
+		name: 'UserProfile',
+		component: () => import('@/views/UserProfileView.vue'),
+		meta: { requiresAuth: true },
+	},
+
 ];
 
 const router = createRouter({
@@ -43,16 +66,18 @@ const router = createRouter({
 
 // Navigation guard to check if user is authenticated
 router.beforeEach((to, from, next) => {
-	if (to.matched.some(record => record.meta.requiresAuth)) {
+	const authenticated = isAuthenticated();
+	if (to.matched.some(record => record.meta.requiresNoAuth)
+		&& authenticated) {
+		next({
+			path: '/',
+		});
+	} else if (to.matched.some(record => record.meta.requiresAuth) && !authenticated) {
 		// This route requires auth, check if logged in
-		if (!isAuthenticated()) {
-			next({
-				path: '/login',
-				query: { redirect: to.fullPath },
-			});
-		} else {
-			next();
-		}
+		next({
+			path: '/login',
+			query: { redirect: to.fullPath },
+		});
 	} else {
 		next();
 	}
