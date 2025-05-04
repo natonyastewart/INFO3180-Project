@@ -1,68 +1,52 @@
-import type { ApiResponse, Profile, ProfileSearchParams } from './api.types';
+import type { ApiResponse, CreateFavouriteDto, Favourite, Profile, ProfileDto, ProfileSearchParams, ProfileWithUser, TopFavourite, User } from './api.types';
 
 import { API_URL } from '@/constants';
 import axios from 'axios';
 
 // User related API calls
-export const getUserById = async (userId: string): Promise<ApiResponse<any>> => {
-	const response = await axios.get<ApiResponse<any>>(`${API_URL}/users/${userId}`);
+export const getUserById = async (userId: number) => {
+	const response = await axios.get<ApiResponse<Omit<User, 'email'>>>(`${API_URL}/users/${userId}`);
 	return response.data;
 };
 
-export const getUserFavorites = async (userId: string): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/users/${userId}/favourites`);
+export const getUserFavorites = async () => {
+	const response = await axios.get<ApiResponse<Favourite[]>>(`${API_URL}/users/favourites`);
 	return response.data;
 };
 
-export const getTopFavorites = async (count = 20): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/users/favourties/${count}`);
+export const getTopFavorites = async (threshold = 20) => {
+	const response = await axios.get<ApiResponse<TopFavourite[]>>(`${API_URL}/users/favourites/${threshold}`);
 	return response.data;
 };
 
 // Profile related API calls
-export const getAllProfiles = async (): Promise<ApiResponse<Profile[]>> => {
+export const createProfile = async (data: ProfileDto) => {
+	const response = await axios.post<ApiResponse<Profile>>(`${API_URL}/profiles`, data);
+	return response.data;
+};
+
+export const getProfiles = async () => {
 	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/profiles`);
 	return response.data;
 };
 
-export const getUserProfiles = async (userId: string) => {
-	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/profiles/user/${userId}`);
-	return response.data;
-};
-
-export const getProfileById = async (profileId: string): Promise<ApiResponse<Profile>> => {
+export const getProfileById = async (profileId: number) => {
 	const response = await axios.get<ApiResponse<Profile>>(`${API_URL}/profiles/${profileId}`);
 	return response.data;
 };
 
-export const createProfile = async (profileData: Partial<Profile>): Promise<ApiResponse<Profile>> => {
-	const response = await axios.post<ApiResponse<Profile>>(`${API_URL}/profiles`, profileData);
+export const addToFavorites = async (data: CreateFavouriteDto) => {
+	const response = await axios.post<ApiResponse<Favourite>>(`${API_URL}/profiles/favourite`, data);
 	return response.data;
 };
 
-export const uploadProfilePhoto = async (profileId: string, photo: File): Promise<ApiResponse<any>> => {
-	const formData = new FormData();
-	formData.append('photo', photo);
-	const response = await axios.post<ApiResponse<any>>(`${API_URL}/profiles/${profileId}/photo`, formData, {
-		headers: {
-			'Content-Type': 'multipart/form-data',
-		},
-	});
-	return response.data;
-};
-
-export const addToFavorites = async (userId: string): Promise<ApiResponse<any>> => {
-	const response = await axios.post<ApiResponse<any>>(`${API_URL}/profiles/${userId}/favourite`);
-	return response.data;
-};
-
-export const getProfileMatches = async (profileId: string): Promise<ApiResponse<Profile[]>> => {
-	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/profiles/matches/${profileId}`);
+export const getProfileMatches = async (profileId: number) => {
+	const response = await axios.get<ApiResponse<ProfileWithUser[]>>(`${API_URL}/profiles/matches/${profileId}`);
 	return response.data;
 };
 
 // Search profiles
-export const searchProfiles = async (searchParams: ProfileSearchParams): Promise<ApiResponse<Profile[]>> => {
+export const searchProfiles = async (searchParams?: ProfileSearchParams) => {
 	const response = await axios.get<ApiResponse<Profile[]>>(`${API_URL}/search`, {
 		params: searchParams,
 	});

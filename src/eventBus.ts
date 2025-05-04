@@ -3,7 +3,7 @@ import mitt from 'mitt';
 
 // Define event types
 type Events = {
-	'flash': { message: string; type?: string };
+	'flash': { message: string; type?: 'info' | 'success' | 'error' | 'warning' };
 	'auth:update': void;
 	[key: string]: any;
 };

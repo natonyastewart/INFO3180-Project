@@ -3,24 +3,25 @@ import { Button } from '@/components/ui/button';
 import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
-import { getUserProfiles } from '@/services/api';
+import { getProfiles } from '@/services/api';
 import { useGlobalStore } from '@/store';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import emitter from '../eventBus';
 
 const router = useRouter();
-const globalStorage = useGlobalStore();
+const globalStore = useGlobalStore();
 const profiles = ref<any[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
+const self = ref(globalStore.user.data);
 
 const fetchProfiles = async () => {
 	loading.value = true;
 	error.value = null;
 
 	try {
-		const response = await getUserProfiles(globalStorage.user.data!.id!);
+		const response = await getProfiles();
 		profiles.value = response.data ?? [];
 
 		loading.value = false;
@@ -81,13 +82,13 @@ onMounted(fetchProfiles);
 								<div class="flex items-center gap-4">
 									<!-- Profile Image -->
 									<img
-										:src="profile.photo || 'https://via.placeholder.com/100'"
+										:src="self?.photo || 'https://picsum.photos/100'"
 										alt="Profile picture"
 										class="w-20 h-20 rounded-full object-cover border"
 									>
 									<div>
 										<h2 class="text-xl font-semibold">
-											{{ profile.name }}
+											{{ self?.name || 'Unknown User' }}
 										</h2>
 										<p class="text-muted-foreground text-sm">
 											{{ profile.description }}

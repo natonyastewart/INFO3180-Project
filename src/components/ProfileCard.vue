@@ -1,52 +1,64 @@
-<script lang="ts">
+<script setup lang="ts">
+import type { Profile } from '@/services/api.types';
+import { Button } from '@/components/ui/button';
+import Card from '@/components/ui/card/Card.vue';
+import CardContent from '@/components/ui/card/CardContent.vue';
+import CardFooter from '@/components/ui/card/CardFooter.vue';
+import CardHeader from '@/components/ui/card/CardHeader.vue';
+import { computed } from 'vue';
 import FavoriteButton from './FavoriteButton.vue';
 
-export default {
-	name: 'ProfileCard',
-	components: {
-		FavoriteButton,
-	},
-	props: {
-		profile: {
-			type: Object,
-			required: true,
-		},
-		isFavorite: {
-			type: Boolean,
-			default: false,
-		},
-	},
-	methods: {
-		calculateAge(birthYear: number) {
-			const currentYear = new Date().getFullYear();
-			return currentYear - birthYear;
-		},
-	},
+const props = defineProps<{
+	profile: Profile;
+	isFavorite: boolean;
+}>();
+
+const emit = defineEmits(['toggleFavorite']);
+
+const calculateAge = (birthYear: number) => {
+	const currentYear = new Date().getFullYear();
+	return currentYear - birthYear;
 };
+
+const profileImage = computed(() => props.profile.photo || 'https://picsum.photos/512');
 </script>
 
 <template>
-	<div class="card h-100">
-		<img :src="profile.photo || '/default-profile.jpg'" class="card-img-top" alt="Profile">
-		<div class="card-body">
-			<h5 class="card-title">
-				{{ profile.name }}
-			</h5>
-			<p class="card-text">
-				<strong>Parish:</strong> {{ profile.parish }}<br>
-				<strong>Age:</strong> {{ calculateAge(profile.birth_year) }}<br>
-				<strong>Sex:</strong> {{ profile.sex }}
-			</p>
-			<div class="d-flex justify-content-between">
-				<router-link :to="`/profiles/${profile.id}`" class="btn btn-primary">
-					View more details
-				</router-link>
-				<FavoriteButton
-					:profile-id="profile.id"
-					:is-favorite="isFavorite"
-					@toggle="$emit('toggleFavorite')"
-				/>
-			</div>
+	<Card class="h-full overflow-hidden pt-0">
+		<div class="aspect-square w-full overflow-hidden">
+			<img
+				:src="profileImage"
+				:alt="`${profile.name}'s profile`"
+				class="h-full w-full object-cover transition-all hover:scale-105"
+			>
 		</div>
-	</div>
+
+		<CardHeader class="pb-2">
+			<h3 class="text-lg font-semibold">
+				{{ profile.name }}
+			</h3>
+		</CardHeader>
+
+		<CardContent class="pb-2">
+			<div class="space-y-1 text-sm">
+				<p><span class="font-medium">Parish:</span> {{ profile.parish }}</p>
+				<p><span class="font-medium">Age:</span> {{ calculateAge(profile.birth_year) }}</p>
+				<p><span class="font-medium">Sex:</span> {{ profile.sex }}</p>
+			</div>
+		</CardContent>
+
+		<CardFooter class="flex justify-between pt-2">
+			<Button as-child variant="default" size="sm">
+				<router-link :to="`/profiles/${profile.id}`">
+					View details
+				</router-link>
+			</Button>
+
+			<FavoriteButton
+				:profile-id="profile.id"
+				:is-favorite="isFavorite"
+				@toggle="emit('toggleFavorite')"
+			/>
+		</CardFooter>
+	</Card>
 </template>

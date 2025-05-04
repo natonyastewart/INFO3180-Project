@@ -46,6 +46,11 @@ onUnmounted(() => {
 							Home
 						</NavigationMenuLink>
 					</NavigationMenuItem>
+					<NavigationMenuItem>
+						<NavigationMenuLink href="/logout">
+							Logout
+						</NavigationMenuLink>
+					</NavigationMenuItem>
 				</template>
 				<template v-else>
 					<NavigationMenuItem>
@@ -61,36 +66,5 @@ onUnmounted(() => {
 				</template>
 			</NavigationMenuList>
 		</NavigationMenu>
-		<!-- <div class="collapse navbar-collapse" id="navbarNav">
-			<ul class="navbar-nav me-auto">
-				<li class="nav-item" v-if="isLoggedIn">
-					<router-link class="nav-link" to="/">Home</router-link>
-				</li>
-			</ul>
-			<ul class="navbar-nav ms-auto">
-				<template v-if="isLoggedIn">
-					<li class="nav-item">
-						<router-link class="nav-link" :to="`/users/${currentUser?.id}`">My Profile</router-link>
-					</li>
-					<li class="nav-item">
-						<router-link class="nav-link" to="/profiles/new">New Profile</router-link>
-					</li>
-					<li class="nav-item">
-						<router-link class="nav-link" to="/profiles/favourites">Favorites</router-link>
-					</li>
-					<li class="nav-item">
-						<router-link class="nav-link" to="/logout">Logout</router-link>
-					</li>
-				</template>
-				<template v-else>
-					<li class="nav-item">
-						<router-link class="nav-link" to="/login">Login</router-link>
-					</li>
-					<li class="nav-item">
-						<router-link class="nav-link" to="/register">Register</router-link>
-					</li>
-				</template>
-			</ul>
-		</div> -->
 	</nav>
 </template>

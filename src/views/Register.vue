@@ -114,6 +114,21 @@ const onSubmit = form.handleSubmit(async (values) => {
 									</FormItem>
 								</FormField>
 
+								<FormField v-slot="{ componentField }" name="photo">
+									<FormItem>
+										<FormLabel>Photo</FormLabel>
+										<FormControl>
+											<Input
+												type="file"
+												accept="image/*"
+												placeholder="Select a picture"
+												v-bind="componentField"
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+
 								<div class="d-grid gap-2 mt-4">
 									<Button type="submit" class="w-full" :disabled="loading">
 										<span

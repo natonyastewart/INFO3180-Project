@@ -14,5 +14,6 @@ class Config(object):
         "postgres://", "postgresql://"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False  # This is just here to suppress a warning from SQLAlchemy as it will soon be removed
-    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "Som3$ec5etK*yJWT")
-    JWT_EXPIRATION = 86400
+    JWT_SECRET = os.environ.get("SECRET_KEY", "Som3$ec5etK*yJWT")
+    JWT_EXPIRATION = 3600  # Access token expiration: 1 hour
+    JWT_REFRESH_EXPIRATION = 2592000  # Refresh token expiration: 30 days

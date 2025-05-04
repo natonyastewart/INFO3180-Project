@@ -2,10 +2,12 @@ import { defineStore } from 'pinia';
 
 // Define user data interface
 export interface UserData {
-	id?: string;
+	id?: number;
 	username?: string;
 	email?: string;
 	name?: string;
+	photo?: string;
+	date_joined?: string;
 	[key: string]: any; // For any additional properties
 }
 
@@ -27,11 +29,6 @@ export const useGlobalStore = defineStore('globalStore', {
 			data: null,
 		},
 	} as RootState),
-	getters: {
-		user(state): UserState {
-			return state.user;
-		},
-	},
 	actions: {
 		async setAuthenticated(value: boolean): Promise<void> {
 			this.user.loggedIn = value;

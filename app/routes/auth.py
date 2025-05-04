@@ -1,10 +1,17 @@
 import os
 from flask import Blueprint, request, jsonify, current_app
+from sqlalchemy import select
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 from marshmallow import ValidationError
 from app.models import User, db
-from app.utils import generate_response, generate_token, token_required
+from app.utils import (
+    generate_response,
+    generate_token,
+    generate_refresh_token,
+    token_required,
+    refresh_token_required,
+)
 from app.schemas import RegistrationRequestSchema, LoginRequestSchema
 
 auth_bp = Blueprint("auth", __name__)
@@ -84,15 +91,20 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    # Generate JWT token
-    token = generate_token(new_user.id)
+    # Generate JWT tokens
+    access_token = generate_token(new_user.id)
+    refresh_token = generate_refresh_token(new_user.id)
 
     return (
         jsonify(
             generate_response(
                 success=True,
                 message="User registered successfully",
-                data={"user": new_user.to_dict(), "token": token},
+                data={
+                    "user": new_user.to_dict(),
+                    "token": access_token,
+                    "refreshToken": refresh_token,
+                },
             )
         ),
         201,
@@ -102,7 +114,7 @@ def register():
 @auth_bp.route("/auth/login", methods=["POST"])
 def login():
     """
-    Authenticate a user and return a JWT token
+    Authenticate a user and return JWT tokens
     """
     data = request.json if request.is_json else request.form
 
@@ -121,7 +133,9 @@ def login():
         )
 
     # Find user by username
-    user = User.query.filter_by(username=validated_data["username"]).first()
+    user = db.session.scalars(
+        select(User).where(User.username == validated_data["username"])
+    ).first()
 
     # Check if user exists and password is correct
     if not user or not user.check_password(validated_data["password"]):
@@ -136,15 +150,44 @@ def login():
             401,
         )
 
-    # Generate JWT token
-    token = generate_token(user.id)
+    # Generate JWT tokens
+    access_token = generate_token(user.id)
+    refresh_token = generate_refresh_token(user.id)
 
     return (
         jsonify(
             generate_response(
                 success=True,
                 message="Login successful",
-                data={"user": user.to_dict(), "token": token},
+                data={
+                    "user": user.to_dict(),
+                    "token": access_token,
+                    "refreshToken": refresh_token,
+                },
+            )
+        ),
+        200,
+    )
+
+
+@auth_bp.route("/auth/refresh", methods=["POST"])
+@refresh_token_required
+def refresh():
+    """
+    Refresh an access token using a refresh token
+    """
+    # User is already authenticated via the refresh_token_required decorator
+    # and available in g.current_user
+
+    # Generate new access token
+    access_token = generate_token(g.current_user.id)
+
+    return (
+        jsonify(
+            generate_response(
+                success=True,
+                message="Token refreshed successfully",
+                data={"token": access_token},
             )
         ),
         200,

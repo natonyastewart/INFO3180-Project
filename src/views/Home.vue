@@ -2,16 +2,16 @@
 import type { Profile, ProfileSearchParams } from '../services/api.types';
 import type { UserData } from '../store';
 
-import axios from 'axios';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { onMounted, ref } from 'vue';
 import ProfileCard from '../components/ProfileCard.vue';
 import SearchForm from '../components/SearchForm.vue';
-import { getAllProfiles, getUserFavorites, searchProfiles } from '../services/api';
+import { getProfiles, getUserFavorites, searchProfiles } from '../services/api';
 import { getCurrentUser } from '../services/auth';
-
 // Define reactive state
 const profiles = ref<Profile[]>([]);
-const favorites = ref<string[]>([]);
+const favorites = ref<number[]>([]);
 const loading = ref<boolean>(true);
 const isSearching = ref<boolean>(false);
 const hasProfiles = ref<boolean>(false);
@@ -32,8 +32,8 @@ const checkUserProfile = async (): Promise<void> => {
 	try {
 		if (currentUser.value?.id) {
 			// Check if user has at least one profile
-			const response = await axios.get(`/api/users/${currentUser.value.id}`);
-			hasProfiles.value = response.data.profiles && response.data.profiles.length > 0;
+			const response = await getProfiles();
+			hasProfiles.value = response.data ? response.data.length > 0 : false;
 		}
 	} catch (error) {
 		console.error('Error checking user profile:', error);
@@ -45,11 +45,11 @@ const checkUserProfile = async (): Promise<void> => {
 const loadProfiles = async (): Promise<void> => {
 	loading.value = true;
 	try {
-		const data = await getAllProfiles();
+		const data = await searchProfiles();
 		// Filter out current user's profiles
 		if (data.data && Array.isArray(data.data)) {
 			profiles.value = data.data
-				.filter((profile: Profile) => profile.userId !== currentUser.value?.id)
+				.filter((profile: Profile) => profile.user_id !== currentUser.value?.id)
 				.slice(0, 4); // Get only the latest 4 profiles
 		}
 	} catch (error) {
@@ -63,9 +63,9 @@ const loadProfiles = async (): Promise<void> => {
 const loadFavorites = async (): Promise<void> => {
 	try {
 		if (currentUser.value?.id) {
-			const response = await getUserFavorites(currentUser.value.id);
+			const response = await getUserFavorites();
 			if (response.data && Array.isArray(response.data)) {
-				favorites.value = response.data.map((fav: any) => fav.profileId || fav.profile_id);
+				favorites.value = response.data.map(fav => fav.fav_user_id);
 			}
 		}
 	} catch (error) {
@@ -81,9 +81,7 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 	try {
 		const data = await searchProfiles(searchParams);
 		// Filter out current user's profiles
-		if (data.data && Array.isArray(data.data)) {
-			profiles.value = data.data.filter((profile: Profile) => profile.userId !== currentUser.value?.id);
-		}
+		profiles.value = data.data ?? [];
 	} catch (error) {
 		console.error('Error searching profiles:', error);
 	} finally {
@@ -94,8 +92,8 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 
 <template>
 	<div class="home">
-		<div class="mt-4">
-			<h1 class="mb-4">
+		<div class="p-6 tablet:p-24 space-y-12">
+			<h1 class="mb-4 text-5xl font-bold">
 				Welcome to JamDate
 			</h1>
 
@@ -106,7 +104,7 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 					<h2>Search Results</h2>
 				</div>
 				<div v-else>
-					<h2>Recent Profiles</h2>
+					<h2 class="text-xl font-semibold">Recent Profiles</h2>
 				</div>
 
 				<div v-if="loading" class="text-center my-5">
@@ -119,23 +117,25 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 					No profiles found matching your criteria.
 				</div>
 
-				<div v-else class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+				<div v-else class="grid grid-cols-1 phone-big:grid-cols-2 tablet:grid-cols-3 laptop:grid-cols-4 desktop:grid-cols-5">
 					<div v-for="profile in profiles" :key="profile.id" class="col">
 						<ProfileCard
 							:profile="profile"
-							:is-favorite="favorites.includes(profile.id)"
+							:is-favorite="favorites.includes(profile.user_id)"
 							@toggle-favorite="loadFavorites"
 						/>
 					</div>
 				</div>
 			</div>
 
-			<div v-else class="alert alert-warning">
+			<Card v-else class="p-6 w-fit shadow-none border-dashed">
 				<p>You need to complete your profile to see other users.</p>
-				<router-link to="/profiles/new" class="btn btn-primary">
-					Create Profile
+				<router-link to="/profiles/new">
+					<Button>
+						Create Profile
+					</Button>
 				</router-link>
-			</div>
+			</Card>
 		</div>
 	</div>
 </template>

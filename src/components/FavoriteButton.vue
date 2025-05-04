@@ -1,39 +1,45 @@
-<script lang="ts">
+<script setup lang="ts">
+import { Button } from '@/components/ui/button';
+import { HeartIcon } from 'lucide-vue-next';
+import { ref } from 'vue';
 import { addToFavorites } from '../services/api';
 
-export default {
-	name: 'FavoriteButton',
-	props: {
-		profileId: {
-			type: Number,
-			required: true,
-		},
-		isFavorite: {
-			type: Boolean,
-			default: false,
-		},
-	},
-	methods: {
-		async toggleFavorite() {
-			try {
-				await addToFavorites(this.profileId);
-				this.$emit('toggle');
-			} catch (error) {
-				console.error('Error toggling favorite:', error);
-			}
-		},
-	},
-};
+const props = defineProps<{
+	profileId: number;
+	isFavorite: boolean;
+}>();
+
+const emit = defineEmits(['toggle']);
+const isLoading = ref(false);
+
+async function toggleFavorite() {
+	try {
+		isLoading.value = true;
+		await addToFavorites({ userId: props.profileId });
+		emit('toggle');
+	} catch (error) {
+		console.error('Error toggling favorite:', error);
+	} finally {
+		isLoading.value = false;
+	}
+}
 </script>
 
 <template>
-	<button class="btn btn-outline-danger favorite-btn" :class="{ active: isFavorite }" @click.prevent="toggleFavorite">
-		<i class="fas fa-heart" :class="{ 'text-danger': isFavorite }" />
-	</button>
+	<Button
+		variant="outline"
+		size="icon"
+		class="favorite-btn" :class="[
+			{ 'bg-destructive/10 hover:bg-destructive/20': isFavorite },
+		]"
+		:disabled="isLoading"
+		@click.prevent="toggleFavorite"
+	>
+		<HeartIcon
+			class="h-4 w-4" :class="[
+				isFavorite ? 'fill-destructive text-destructive' : 'fill-none text-destructive',
+			]"
+		/>
+		<span class="sr-only">{{ isFavorite ? 'Remove from favorites' : 'Add to favorites' }}</span>
+	</Button>
 </template>
-
-<style scoped>
-.favorite-btn.active {
-	background-color: #ffebee;
-}
-</style>

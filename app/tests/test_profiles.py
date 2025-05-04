@@ -2,6 +2,88 @@ import json
 from app.models import Favourite
 
 
+def test_get_profiles(client, auth_headers):
+    """Test getting all profiles."""
+    response = client.get("/api/profiles", headers=auth_headers)
+    data = json.loads(response.data)
+
+    print(data["data"])
+
+    assert response.status_code == 200
+    assert data["success"] is True
+    assert len(data["data"]) == 1
+    assert data["data"][0]["biography"] == "This is a test biography for user 1"
+
+
+def test_profile_create(client, auth_headers):
+    """Test creating a profile."""
+    body = {
+        "description": "Test description",
+        "parish": "Test parish",
+        "biography": "Test 2 biography for user 1",
+        "sex": "Male",
+        "race": "Test race",
+        "birth_year": 1990,
+        "height": 180.5,
+        "fav_cuisine": "Italian",
+        "fav_colour": "Blue",
+        "fav_school_subject": "Math",
+        "political": True,
+        "religious": False,
+        "family_oriented": True,
+    }
+
+    response = client.post(
+        "/api/profiles",
+        data=json.dumps(body),
+        content_type="application/json",
+        headers=auth_headers,
+    )
+
+    data = json.loads(response.data)
+
+    assert response.status_code == 201
+    assert data["success"] is True
+    assert data["data"]["user_id"] == 1
+
+    # Test fetching
+    response = client.get("/api/profiles", headers=auth_headers)
+    data = json.loads(response.data)
+    assert response.status_code == 200
+    assert len(data["data"]) == 2
+
+    # Create another one
+    body["description"] = "Test 3 biography for user 1"
+
+    response = client.post(
+        "/api/profiles",
+        data=json.dumps(body),
+        content_type="application/json",
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 201
+    assert data["success"] is True
+
+    # Test fetching
+    response = client.get("/api/profiles", headers=auth_headers)
+    data = json.loads(response.data)
+    assert response.status_code == 200
+    assert len(data["data"]) == 3
+
+    # This should fail
+    response = client.post(
+        "/api/profiles",
+        data=json.dumps(body),
+        content_type="application/json",
+        headers=auth_headers,
+    )
+    data = json.loads(response.data)
+
+    assert response.status_code == 400
+    assert data["success"] is False
+
+
 def test_get_profiles_detail(client, auth_headers):
     """Test getting a specific profile by ID."""
     # Test with valid profile ID
@@ -165,7 +247,7 @@ def test_get_user(client, auth_headers):
 
 def test_get_user_favourites(client, auth_headers):
     """Test getting favourites for a specific user."""
-    response = client.get("/api/users/1/favourites", headers=auth_headers)
+    response = client.get("/api/users/favourites", headers=auth_headers)
     data = json.loads(response.data)
 
     print("data: ", data)
@@ -213,7 +295,7 @@ def test_unauthenticated_requests(client):
         "/api/profiles/1",
         "/api/search",
         "/api/users/1",
-        "/api/users/1/favourites",
+        "/api/users/favourites",
         "/api/users/favourites/5",
         "/api/profiles/matches/1",
     ]
@@ -253,7 +335,7 @@ def test_profile_required_routes(client, app):
     profile_required_endpoints = [
         "/api/profiles/favourite",
         "/api/profiles/matches/1",
-        "/api/users/1/favourites",
+        "/api/users/favourites",
     ]
 
     for endpoint in profile_required_endpoints:

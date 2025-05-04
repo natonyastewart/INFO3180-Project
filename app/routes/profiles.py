@@ -1,20 +1,89 @@
 from flask import Blueprint, jsonify, request, g
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, select
 from marshmallow import ValidationError
 from app.models import Favourite, Profile, User, db
 from app.utils import generate_response, token_required, has_profile_required
 from app.schemas import (
-    FavouriteRequestSchema, 
-    ProfileSchema, 
+    CreateProfileDto,
+    FavouriteRequestSchema,
+    ProfileSchema,
     SearchRequestSchema,
     UserSchema,
     FavouriteSchema,
     TopFavouriteSchema,
     ProfileWithUserSchema,
-    UserInfoSchema
+    UserInfoSchema,
 )
 
 profiles_bp = Blueprint("profiles", __name__)
+
+
+@profiles_bp.route("/profiles", methods=["GET", "POST"])
+@token_required
+def handle_profiles():
+    if request.method == "GET":
+        return get_profiles()
+    else:
+        return create_profile()
+
+
+def get_self_profiles():
+    user_id = g.current_user.id
+
+    profiles = db.session.scalars(
+        select(Profile).where(Profile.user_id_fk == user_id)
+    ).all()
+
+    profile_schema = ProfileSchema()
+    return [profile_schema.dump(profile.to_dict()) for profile in profiles]
+
+
+def get_profiles():
+    """
+    Get all profiles fdr authenticated user
+    """
+    return jsonify(generate_response(data=get_self_profiles()))
+
+
+def create_profile():
+    user_id = g.current_user.id
+
+    if len(get_self_profiles()) == 3:
+        return (
+            jsonify(
+                generate_response(
+                    success=False,
+                    errors={
+                        "error": "You already have 3 profiles, you cannot create any more."
+                    },
+                )
+            ),
+            400,
+        )
+
+    body = request.get_json()
+    schema = CreateProfileDto()
+
+    try:
+        data = schema.load(body)
+
+        profile = Profile(user_id_fk=user_id, **data)
+        db.session.add(profile)
+        db.session.commit()
+
+        return (
+            jsonify(generate_response(data=profile.to_dict())),
+            201,
+        )
+    except ValidationError as err:
+        return (
+            jsonify(
+                generate_response(
+                    success=False, message="Validation error", errors=err.messages
+                )
+            ),
+            400,
+        )
 
 
 @profiles_bp.route("/profiles/<profile_id>", methods=["GET"])
@@ -36,7 +105,7 @@ def get_profiles_detail(profile_id):
     # Use marshmallow schema to serialize the profile
     profile_schema = ProfileSchema()
     profile_data = profile_schema.dump(profile)
-    
+
     return jsonify(generate_response(data=profile_data))
 
 
@@ -57,7 +126,7 @@ def add_favourite():
             ),
             400,
         )
-        
+
     new_fav = Favourite(
         user_id_fk=g.current_user.id,
         fav_user_id_fk=data["userId"],
@@ -161,7 +230,7 @@ def get_profile_matches(profile_id):
             "id": user_info.get("id"),
         }
         detailed_results.append(profile_dict)
-    
+
     # Use the schema to validate and serialize the data
     schema = ProfileWithUserSchema(many=True)
     result = schema.dump(detailed_results)
@@ -178,9 +247,9 @@ def search_profiles():
         "name": request.args.get("name"),
         "birth_year": request.args.get("birth_year"),
         "sex": request.args.get("sex"),
-        "race": request.args.get("race")
+        "race": request.args.get("race"),
     }
-    
+
     # Convert birth_year to int if it exists
     if query_params["birth_year"]:
         try:
@@ -189,14 +258,14 @@ def search_profiles():
             return (
                 jsonify(
                     generate_response(
-                        success=False, 
-                        message="Validation error", 
-                        errors={"birth_year": ["Must be a valid integer"]}
+                        success=False,
+                        message="Validation error",
+                        errors={"birth_year": ["Must be a valid integer"]},
                     )
                 ),
                 400,
             )
-    
+
     # Validate query parameters using marshmallow schema
     schema = SearchRequestSchema()
     try:
@@ -224,6 +293,8 @@ def search_profiles():
     if validated_params.get("race"):
         filters.append(Profile.race == validated_params["race"])
 
+    filters.append(Profile.user_id_fk != g.current_user.id)
+
     # Apply filters and execute query
     results = query.filter(*filters).all()
 
@@ -243,26 +314,48 @@ def search_profiles():
 @token_required
 def get_user(user_id):
     """Get details of a specific user"""
-    user = User.query.get_or_404(user_id)
-    
+    user = db.session.scalars(select(User).where(User.id == user_id)).first()
+
+    if not user:
+        return (
+            jsonify(
+                generate_response(
+                    success=False,
+                    errors={"error": "User not found"},
+                )
+            ),
+            404,
+        )
+
     # Use marshmallow schema to serialize the user
     user_schema = UserSchema()
     user_data = user_schema.dump(user)
-    
-    return jsonify(generate_response(data=user_data))
+
+    return jsonify(
+        generate_response(
+            data={
+                "name": user_data["name"],
+                "username": user_data["username"],
+                "photo": user_data["photo"],
+                "id": user_data["id"],
+                "date_joined": user_data["date_joined"],
+            }
+        )
+    )
 
 
-@profiles_bp.route("/users/<int:user_id>/favourites", methods=["GET"])
+@profiles_bp.route("/users/favourites", methods=["GET"])
 @token_required
 @has_profile_required
-def get_user_favourites(user_id):
+def get_user_favourites():
     """Get list of users favored by specified user"""
+    user_id = g.current_user.id
     favourites = Favourite.query.filter_by(user_id_fk=user_id).all()
-    
+
     # Use marshmallow schema to serialize the favourites
     favourite_schema = FavouriteSchema(many=True)
     favourite_data = favourite_schema.dump(favourites)
-    
+
     return jsonify(generate_response(data=favourite_data))
 
 
@@ -293,7 +386,7 @@ def get_top_favourites(threshold):
         .limit(threshold)
         .all()
     )
-    
+
     # Transform the results into the expected format
     data = [
         {
@@ -303,7 +396,7 @@ def get_top_favourites(threshold):
         }
         for user in top_users
     ]
-    
+
     # Use the schema to validate and serialize the data
     schema = TopFavouriteSchema(many=True)
     result = schema.dump(data)

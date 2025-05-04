@@ -1,31 +1,33 @@
 <script lang="ts" setup>
 import type { UserData } from './store';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { Toaster } from '@/components/ui/sonner';
 
+import { onMounted, onUnmounted } from 'vue';
+import { toast } from 'vue-sonner';
 import NavBar from './components/NavBar.vue';
 import emitter from './eventBus';
 import { useGlobalStore } from './store';
-
-interface FlashMessage {
-	message: string;
-	type: string;
-}
-
-const flashMessage = ref<FlashMessage>({
-	message: '',
-	type: 'info',
-});
 
 const store = useGlobalStore();
 
 onMounted(() => {
 	emitter.on('flash', (data) => {
 		const { message, type = 'info' } = data;
-		flashMessage.value = { message, type };
 
-		setTimeout(() => {
-			flashMessage.value = { message: '', type: 'info' };
-		}, 3000);
+		switch (type) {
+			case 'success':
+				toast.success(message);
+				break;
+			case 'error':
+				toast.error(message);
+				break;
+			case 'warning':
+				toast.warning(message);
+				break;
+			case 'info':
+				toast.info(message);
+				break;
+		}
 	});
 
 	const token = localStorage.getItem('token');
@@ -42,12 +44,11 @@ onUnmounted(() => {
 </script>
 
 <template>
+	<Toaster position="top-right" />
+
 	<div id="app">
 		<NavBar />
 		<div class="mt-4 py-12 w-full">
-			<div v-if="flashMessage.message" :class="`alert alert-${flashMessage.type}`" role="alert">
-				{{ flashMessage.message }}
-			</div>
 			<router-view />
 		</div>
 	</div>

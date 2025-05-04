@@ -3,15 +3,17 @@ import { Button } from '@/components/ui/button';
 import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createProfileDto } from '@/services/api.types';
 import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import emitter from '../eventBus';
-import { createProfile, uploadProfilePhoto } from '../services/api';
+import { createProfile } from '../services/api';
 
 const formSchema = toTypedSchema(createProfileDto);
 
@@ -54,9 +56,6 @@ const onSubmit = form.handleSubmit(async (values) => {
 	try {
 		const res = await createProfile(values);
 
-		if (selectedFile.value && res.data) {
-			await uploadProfilePhoto(res.data.id, selectedFile.value);
-		}
 		// Show success message
 		emitter.emit('flash', {
 			message: 'Profile created successfully!',
@@ -87,12 +86,6 @@ const onSubmit = form.handleSubmit(async (values) => {
 						</div>
 
 						<form class="space-y-6" @submit="onSubmit">
-							<!-- Profile Image Upload -->
-							<div class="space-y-2">
-								<FormLabel>Profile Picture</FormLabel>
-								<Input type="file" accept="image/*" @change="handleFileUpload" />
-							</div>
-
 							<!-- Description -->
 							<FormField v-slot="{ componentField }" name="description">
 								<FormItem>
@@ -135,21 +128,32 @@ const onSubmit = form.handleSubmit(async (values) => {
 								<FormField v-slot="{ componentField }" name="sex">
 									<FormItem>
 										<FormLabel>Sex</FormLabel>
-										<FormControl>
-											<select
-												v-bind="componentField"
-												class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-											>
-												<option disabled value="">
-													Select your sex
-												</option>
-												<option>Male</option>
-												<option>Female</option>
-												<option>Non-Binary</option>
-												<option>Prefer Not To Say</option>
-												<option>Other</option>
-											</select>
-										</FormControl>
+										<Select v-bind="componentField">
+											<FormControl>
+												<SelectTrigger class="w-full">
+													<SelectValue placeholder="Select your sex" />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
+												<SelectGroup>
+													<SelectItem value="Male">
+														Male
+													</SelectItem>
+													<SelectItem value="Female">
+														Female
+													</SelectItem>
+													<SelectItem value="Non-Binary">
+														Non-Binary
+													</SelectItem>
+													<SelectItem value="Prefer Not To Say">
+														Prefer Not To Say
+													</SelectItem>
+													<SelectItem value="Other">
+														Other
+													</SelectItem>
+												</SelectGroup>
+											</SelectContent>
+										</Select>
 										<FormMessage />
 									</FormItem>
 								</FormField>
@@ -224,28 +228,28 @@ const onSubmit = form.handleSubmit(async (values) => {
 
 							<!-- Checkboxes -->
 							<div class="flex flex-wrap gap-6 mt-6">
-								<FormField v-slot="{ componentField }" name="political">
+								<FormField v-slot="{ value, handleChange }" type="checkbox" name="political">
 									<FormItem class="flex items-center space-x-2">
 										<FormControl>
-											<input type="checkbox" v-bind="componentField">
+											<Checkbox :model-value="value" @update:model-value="handleChange" />
 										</FormControl>
 										<FormLabel>Political</FormLabel>
 									</FormItem>
 								</FormField>
 
-								<FormField v-slot="{ componentField }" name="religious">
+								<FormField v-slot="{ value, handleChange }" type="checkbox" name="religious">
 									<FormItem class="flex items-center space-x-2">
 										<FormControl>
-											<input type="checkbox" v-bind="componentField">
+											<Checkbox :model-value="value" @update:model-value="handleChange" />
 										</FormControl>
 										<FormLabel>Religious</FormLabel>
 									</FormItem>
 								</FormField>
 
-								<FormField v-slot="{ componentField }" name="family_oriented">
+								<FormField v-slot="{ value, handleChange }" type="checkbox" name="family_oriented">
 									<FormItem class="flex items-center space-x-2">
 										<FormControl>
-											<input type="checkbox" v-bind="componentField">
+											<Checkbox :model-value="value" @update:model-value="handleChange" />
 										</FormControl>
 										<FormLabel>Family Oriented</FormLabel>
 									</FormItem>
