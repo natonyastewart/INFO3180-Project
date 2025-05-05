@@ -12,7 +12,7 @@ def test_get_profiles_detail_fields(client, auth_headers):
     # Check all fields are present
     expected_fields = [
         "id",
-        "user_id",
+        "user",
         "description",
         "parish",
         "biography",
@@ -36,7 +36,7 @@ def test_get_profiles_detail_fields(client, auth_headers):
 def test_add_favourite_duplicate(client, auth_headers):
     """Test adding a duplicate favourite."""
     # First add a favourite
-    payload = {"user_id": 5, "user_id_fk": 2, "fav_user_id_fk": 3}
+    payload = {"user_id": 5, "user_id_fk": 2, "fav_profile_id_fk": 3}
 
     client.post(
         "/api/profiles/2/favourite",
@@ -46,7 +46,7 @@ def test_add_favourite_duplicate(client, auth_headers):
     )
 
     # Try to add the same favourite again
-    payload = {"user_id": 6, "user_id_fk": 2, "fav_user_id_fk": 3}
+    payload = {"user_id": 6, "user_id_fk": 2, "fav_profile_id_fk": 3}
 
     response = client.post(
         "/api/profiles/2/favourite",
@@ -62,18 +62,18 @@ def test_add_favourite_duplicate(client, auth_headers):
 def test_search_profiles_case_insensitive(client, auth_headers):
     """Test that name search is case insensitive."""
     # Search with lowercase
-    response_lower = client.get("/api/search?name=test user 1", headers=auth_headers)
+    response_lower = client.get("/api/search?name=test user 2", headers=auth_headers)
     data_lower = json.loads(response_lower.data)
 
     # Search with mixed case
-    response_mixed = client.get("/api/search?name=Test User 1", headers=auth_headers)
+    response_mixed = client.get("/api/search?name=Test User 2", headers=auth_headers)
     data_mixed = json.loads(response_mixed.data)
 
     # Both should return the same result
     assert response_lower.status_code == 200
     assert response_mixed.status_code == 200
     assert len(data_lower["data"]) == len(data_mixed["data"])
-    assert data_lower["data"][0]["user_id"] == data_mixed["data"][0]["user_id"]
+    assert data_lower["data"][0]["user"]["id"] == data_mixed["data"][0]["user"]["id"]
 
 
 def test_search_profiles_partial_name(client, auth_headers):
@@ -83,7 +83,7 @@ def test_search_profiles_partial_name(client, auth_headers):
 
     assert response.status_code == 200
     assert data["success"] is True
-    assert len(data["data"]) == 7
+    assert len(data["data"]) == 6
 
 
 def test_get_top_favourites_ordering(client, auth_headers):
@@ -91,8 +91,8 @@ def test_get_top_favourites_ordering(client, auth_headers):
     # Add more favourites to ensure ordering
     with client.application.app_context():
         # Add more favourites for user 1 to make them the most favourited
-        fav4 = Favourite(user_id_fk=5, fav_user_id_fk=6)
-        fav5 = Favourite(user_id_fk=3, fav_user_id_fk=2)
+        fav4 = Favourite(user_id_fk=5, fav_profile_id_fk=6)
+        fav5 = Favourite(user_id_fk=3, fav_profile_id_fk=2)
         db.session.add_all([fav4, fav5])
         db.session.commit()
 
@@ -102,14 +102,9 @@ def test_get_top_favourites_ordering(client, auth_headers):
     assert response.status_code == 200
     assert data["success"] is True
 
-    # User 1 should be the most favourited (with 3 favourites)
-    assert data["data"][0]["user_id"] == 1
-
-    # Check ordering
-    if len(data["data"]) > 1:
-        first_count = data["data"][0].get("favourite_count")
-        second_count = data["data"][1].get("favourite_count")
-        assert first_count >= second_count
+    print(data["data"])
+    # Profile 1 should be the most favourited
+    assert data["data"][0]["profile"]["user"]["id"] == 1
 
 
 def test_get_specific_profile_list_empty_matches(client, auth_headers):

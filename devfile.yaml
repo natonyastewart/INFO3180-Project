@@ -1,0 +1,26 @@
+schemaVersion: 2.0.0
+metadata:
+  name: flask-vue-app
+  version: 1.0.0
+  displayName: Flask Vue.js Application
+  description: Development environment for Flask backend with Vue.js frontend
+components:
+  - name: dev
+    container:
+      image: public.ecr.aws/aws-mde/universal-image:latest
+commands:
+  - id: install
+    exec:
+      component: dev
+      commandLine: 'pip install -r requirements.txt && npm install'
+      workingDir: ${PROJECT_SOURCE}
+  - id: build
+    exec:
+      component: dev
+      commandLine: npm run build
+      workingDir: ${PROJECT_SOURCE}
+  - id: test
+    exec:
+      component: dev
+      commandLine: "echo 'Running backend tests if available' && ([ -d tests ] && python -m unittest discover -s tests || echo 'No backend tests directory found') && echo 'No frontend tests configured in package.json'"
+      workingDir: ${PROJECT_SOURCE}

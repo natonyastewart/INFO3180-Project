@@ -41,12 +41,12 @@ def test_add_and_verify_favourite(client, app):
     """Test adding a new favourite and verifying it exists."""
     # Add a new favourite relationship
     with app.app_context():
-        new_favourite = Favourite(user_id_fk=1, fav_user_id_fk=3)
+        new_favourite = Favourite(user_id_fk=1, fav_profile_id_fk=3)
         db.session.add(new_favourite)
         db.session.commit()
 
         # Verify the favourite was added
-        favourite = Favourite.query.filter_by(user_id_fk=1, fav_user_id_fk=3).first()
+        favourite = Favourite.query.filter_by(user_id_fk=1, fav_profile_id_fk=3).first()
         assert favourite is not None
 
 
@@ -59,13 +59,13 @@ def test_favourites_are_reset(client, app):
         assert len(favourites) == 3
 
         # Check specific favourite relationships from the initial setup
-        fav1 = Favourite.query.filter_by(user_id_fk=1, fav_user_id_fk=2).first()
+        fav1 = Favourite.query.filter_by(user_id_fk=1, fav_profile_id_fk=1).first()
         assert fav1 is not None
 
-        fav2 = Favourite.query.filter_by(user_id_fk=2, fav_user_id_fk=1).first()
+        fav2 = Favourite.query.filter_by(user_id_fk=2, fav_profile_id_fk=1).first()
         assert fav2 is not None
 
-        fav3 = Favourite.query.filter_by(user_id_fk=3, fav_user_id_fk=1).first()
+        fav3 = Favourite.query.filter_by(user_id_fk=3, fav_profile_id_fk=1).first()
         assert fav3 is not None
 
 

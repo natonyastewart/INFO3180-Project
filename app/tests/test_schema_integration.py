@@ -94,7 +94,7 @@ def test_login_validation(client):
 def test_add_favourite_validation(client, auth_headers):
     """Test add favourite endpoint validation"""
     # Test with valid data
-    valid_data = {"userId": 3}
+    valid_data = {"profileId": 3}
 
     response = client.post(
         "/api/profiles/favourite",
@@ -107,7 +107,7 @@ def test_add_favourite_validation(client, auth_headers):
     data = json.loads(response.data)
     assert data["success"] is True
 
-    # Test with invalid data - missing userId
+    # Test with invalid data - missing profileId
     invalid_data = {}
 
     response = client.post(
@@ -121,10 +121,10 @@ def test_add_favourite_validation(client, auth_headers):
     data = json.loads(response.data)
     assert data["success"] is False
     assert "Validation error" in data["message"]
-    assert "userId" in data["errors"]
+    assert "profileId" in data["errors"]
 
-    # Test with invalid data - userId not an integer
-    invalid_data = {"userId": "not-an-integer"}
+    # Test with invalid data - profileId not an integer
+    invalid_data = {"profileId": "not-an-integer"}
 
     response = client.post(
         "/api/profiles/favourite",

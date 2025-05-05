@@ -21,8 +21,6 @@ def app():
         }
     )
 
-    print("DB URI:", test_app.config["SQLALCHEMY_DATABASE_URI"])
-
     # Create the database and the database tables
     with test_app.app_context():
         db.create_all()
@@ -247,9 +245,9 @@ def _populate_db():
     db.session.commit()
 
     # Create test favourites
-    fav1 = Favourite(user_id_fk=1, fav_user_id_fk=2)
-    fav2 = Favourite(user_id_fk=2, fav_user_id_fk=1)
-    fav3 = Favourite(user_id_fk=3, fav_user_id_fk=1)
+    fav1 = Favourite(user_id_fk=1, fav_profile_id_fk=profile1.id)
+    fav2 = Favourite(user_id_fk=2, fav_profile_id_fk=profile1.id)
+    fav3 = Favourite(user_id_fk=3, fav_profile_id_fk=profile1.id)
 
     db.session.add_all([fav1, fav2, fav3])
     db.session.commit()

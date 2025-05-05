@@ -125,6 +125,7 @@ npm run preview
 To deploy the Vue application to production:
 
 1. Build the application:
+
    ```bash
    npm run build
    ```
@@ -134,13 +135,14 @@ To deploy the Vue application to production:
 3. Configure your web server (like Nginx or Apache) to serve the static files and handle SPA routing:
 
    Example Nginx configuration:
+
    ```nginx
    server {
        listen 80;
        server_name your-domain.com;
        root /path/to/dist;
        index index.html;
-       
+
        location / {
            try_files $uri $uri/ /index.html;
        }

@@ -1,17 +1,52 @@
 {
-  "name": "info3180-vuejs-flask-starter",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "vue": "^3.2.47",
-    "vue-router": "^4.1.6"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^4.0.0",
-    "vite": "^4.1.4"
-  }
+	"name": "info3180-vuejs-flask-starter",
+	"type": "module",
+	"version": "1.0.0",
+	"scripts": {
+		"dev": "vite",
+		"build": "vue-tsc --noEmit && vite build",
+		"deploy": "vue-tsc --noEmit && vite build --base '/vue-ts/'",
+		"preview": "vite preview",
+		"format": "prettier --write .",
+		"lint": "eslint . --ext .js,.jsx,.ts,.tsx,.vue",
+		"lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx,.vue --fix",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@tailwindcss/vite": "^4.1.4",
+		"@vee-validate/zod": "^4.15.0",
+		"@vue/cli-service": "^5.0.8",
+		"@vueuse/core": "^13.1.0",
+		"axios": "^1.9.0",
+		"axios-retry": "^4.5.0",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"lucide-vue-next": "^0.503.0",
+		"mitt": "^3.0.1",
+		"pinia": "^3.0.2",
+		"reka-ui": "^2.2.0",
+		"tailwind-merge": "^3.2.0",
+		"tailwindcss": "^4.1.4",
+		"tw-animate-css": "^1.2.8",
+		"vee-validate": "^4.15.0",
+		"vue": "^3.5.13",
+		"vue-router": "^4.5.1",
+		"vue-sonner": "^1.3.2",
+		"zod": "^3.24.3"
+	},
+	"devDependencies": {
+		"@antfu/eslint-config": "^4.12.0",
+		"@types/node": "^22.15.3",
+		"@typescript-eslint/eslint-plugin": "^8.31.1",
+		"@typescript-eslint/parser": "^8.31.1",
+		"@vitejs/plugin-vue": "^5.2.3",
+		"eslint": "^9.25.1",
+		"eslint-plugin-format": "^1.0.1",
+		"eslint-plugin-jsx-a11y": "^6.10.2",
+		"eslint-plugin-vue": "^10.0.0",
+		"typescript": "^5.8.3",
+		"vite": "^6.3.3",
+		"vue-eslint-parser": "^10.1.3",
+		"vue-tsc": "^2.2.10"
+	}
 }

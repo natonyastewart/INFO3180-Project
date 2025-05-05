@@ -124,29 +124,31 @@ class Favourite(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id_fk = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    fav_user_id_fk = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    fav_profile_id_fk = db.Column(
+        db.Integer, db.ForeignKey("profiles.id"), nullable=False
+    )
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     # Define a unique constraint to prevent duplicate favorites
     __table_args__ = (
-        db.UniqueConstraint("user_id_fk", "fav_user_id_fk", name="unique_favourite"),
+        db.UniqueConstraint("user_id_fk", "fav_profile_id_fk", name="unique_favourite"),
     )
 
     # Relationship to get the favorited user's details
-    favourited_user = db.relationship(
-        "User",
-        foreign_keys=[fav_user_id_fk],
+    favourited_profile = db.relationship(
+        "Profile",
+        foreign_keys=[fav_profile_id_fk],
         backref=db.backref("favourited_by", lazy=True),
     )
 
-    def __init__(self, user_id_fk, fav_user_id_fk):
+    def __init__(self, user_id_fk, fav_profile_id_fk):
         self.user_id_fk = user_id_fk
-        self.fav_user_id_fk = fav_user_id_fk
+        self.fav_profile_id_fk = fav_profile_id_fk
 
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id_fk,
-            "fav_user_id": self.fav_user_id_fk,
+            "fav_profile_id": self.fav_profile_id_fk,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
