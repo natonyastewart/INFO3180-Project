@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { Profile } from '@/services/api.types';
 import { Button } from '@/components/ui/button';
 import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
-import { getProfiles } from '@/services/api';
+import { getProfiles, getUploadedFileUrl } from '@/services/api';
 import { useGlobalStore } from '@/store';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -11,7 +12,7 @@ import emitter from '../eventBus';
 
 const router = useRouter();
 const globalStore = useGlobalStore();
-const profiles = ref<any[]>([]);
+const profiles = ref<Profile[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const self = ref(globalStore.user.data);
@@ -37,8 +38,8 @@ const fetchProfiles = async () => {
 	}
 };
 
-const goToProfile = (id: string) => {
-	router.push({ name: 'ProfileDetails', params: { profile_id: id } });
+const goToProfile = (id: number) => {
+	router.push(`/profiles/${id}`);
 };
 
 const createNewProfile = () => {
@@ -82,7 +83,7 @@ onMounted(fetchProfiles);
 								<div class="flex items-center gap-4">
 									<!-- Profile Image -->
 									<img
-										:src="self?.photo || 'https://picsum.photos/100'"
+										:src="getUploadedFileUrl(self?.photo) || 'https://picsum.photos/512'"
 										alt="Profile picture"
 										class="w-20 h-20 rounded-full object-cover border"
 									>

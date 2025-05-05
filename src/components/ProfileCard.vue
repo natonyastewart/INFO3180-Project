@@ -5,12 +5,14 @@ import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
 import CardFooter from '@/components/ui/card/CardFooter.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
+import { getUploadedFileUrl } from '@/services/api';
 import { computed } from 'vue';
 import FavoriteButton from './FavoriteButton.vue';
 
 const props = defineProps<{
 	profile: Profile;
 	isFavorite: boolean;
+	favId?: number;
 }>();
 
 const emit = defineEmits(['toggleFavorite']);
@@ -20,7 +22,7 @@ const calculateAge = (birthYear: number) => {
 	return currentYear - birthYear;
 };
 
-const profileImage = computed(() => props.profile.photo || 'https://picsum.photos/512');
+const profileImage = computed(() => getUploadedFileUrl(props.profile.user?.photo) || 'https://picsum.photos/512');
 </script>
 
 <template>
@@ -28,14 +30,14 @@ const profileImage = computed(() => props.profile.photo || 'https://picsum.photo
 		<div class="aspect-square w-full overflow-hidden">
 			<img
 				:src="profileImage"
-				:alt="`${profile.name}'s profile`"
+				:alt="`${profile.user?.name}'s profile`"
 				class="h-full w-full object-cover transition-all hover:scale-105"
 			>
 		</div>
 
 		<CardHeader class="pb-2">
 			<h3 class="text-lg font-semibold">
-				{{ profile.name }}
+				{{ profile.user?.name ?? 'Unknown User' }}
 			</h3>
 		</CardHeader>
 
@@ -57,6 +59,7 @@ const profileImage = computed(() => props.profile.photo || 'https://picsum.photo
 			<FavoriteButton
 				:profile-id="profile.id"
 				:is-favorite="isFavorite"
+				:fav-id="favId"
 				@toggle="emit('toggleFavorite')"
 			/>
 		</CardFooter>

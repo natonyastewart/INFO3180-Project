@@ -27,11 +27,12 @@ export const register = async ({ photo, ...userData }: RegisterUserDto): Promise
 	});
 
 	if (photo) {
+		console.debug('Adding photo to formData');
 		formData.append('photo', photo);
 	}
 
 	try {
-		const response = await axios.post<ApiResponse<AuthResponse>>(`${API_URL}/register`, userData, {
+		const response = await axios.post<ApiResponse<AuthResponse>>(`${API_URL}/register`, formData, {
 			headers: {
 				'Content-Type': 'multipart/form-data',
 			},

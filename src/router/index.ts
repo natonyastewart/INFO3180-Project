@@ -1,4 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router';
+import emitter from '@/eventBus';
+import { useGlobalStore } from '@/store';
 import { createRouter, createWebHistory } from 'vue-router';
 import { isAuthenticated } from '../services/auth';
 
@@ -27,6 +29,10 @@ const routes: Array<RouteRecordRaw> = [
 			// Clear token and user info from localStorage
 			localStorage.removeItem('token');
 			localStorage.removeItem('user');
+			emitter.emit('auth:update');
+			const gs = useGlobalStore();
+			gs.logout();
+
 			return { path: '/login' };
 		},
 		meta: { requiresAuth: true },
@@ -44,7 +50,7 @@ const routes: Array<RouteRecordRaw> = [
 		meta: { requiresAuth: true },
 	},
 	{
-		path: '/profiles/favorites',
+		path: '/profiles/favourites',
 		name: 'Favorites',
 		component: () => import('@/views/FavoritesReportView.vue'),
 		meta: { requiresAuth: true },

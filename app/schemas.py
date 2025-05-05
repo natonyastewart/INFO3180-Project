@@ -85,16 +85,11 @@ class FavouriteSchema(Schema):
 
     id = fields.Int(dump_only=True)
     user_id = fields.Int(required=True, attribute="user_id_fk")
-    fav_user_id = fields.Int(required=True, attribute="fav_user_id_fk")
+    fav_profile_id = fields.Int(required=True, attribute="fav_profile_id_fk")
     created_at = fields.DateTime(dump_only=True)
-
-
-class TopFavouriteSchema(Schema):
-    """Schema for top favourites results"""
-
-    user_id = fields.Int()
-    name = fields.Str()
-    favourite_count = fields.Int()
+    profile = fields.Nested(
+        ProfileSchema, required=False, attribute="favorited_profile"
+    )
 
 
 class UserInfoSchema(Schema):
@@ -147,7 +142,7 @@ class LoginRequestSchema(Schema):
 class FavouriteRequestSchema(Schema):
     """Schema for adding a favourite"""
 
-    userId = fields.Int(required=True)
+    profileId = fields.Int(required=True)
 
 
 class SearchRequestSchema(Schema):
@@ -157,3 +152,4 @@ class SearchRequestSchema(Schema):
     birth_year = fields.Int(allow_none=True)
     sex = fields.Str(allow_none=True)
     race = fields.Str(allow_none=True)
+    limit = fields.Int(allow_none=True)

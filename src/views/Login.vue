@@ -6,8 +6,9 @@ import CardHeader from '@/components/ui/card/CardHeader.vue';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { loginDto } from '@/services/api.types';
-import { toTypedSchema } from '@vee-validate/zod';
+import { useGlobalStore } from '@/store';
 
+import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -20,6 +21,7 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const router = useRouter();
 const route = useRoute();
+const gs = useGlobalStore();
 
 const form = useForm({
 	validationSchema: formSchema,
@@ -30,17 +32,19 @@ const onSubmit = form.handleSubmit(async (values) => {
 	error.value = null;
 
 	try {
-		await login(values);
+		const data = await login(values);
+		if (data.data?.user) {
+			gs.login(data.data?.user);
+			emitter.emit('auth:update');
 
-		emitter.emit('auth:update');
+			emitter.emit('flash', {
+				message: 'Login successful!',
+				type: 'success',
+			});
 
-		emitter.emit('flash', {
-			message: 'Login successful!',
-			type: 'success',
-		});
-
-		const redirectPath = route.query.redirect?.toString() || '/';
-		router.push(redirectPath);
+			const redirectPath = route.query.redirect?.toString() || '/';
+			router.push(redirectPath);
+		} else throw new Error('Login failed');
 	} catch (err) {
 		error.value = 'Invalid username or password';
 	} finally {

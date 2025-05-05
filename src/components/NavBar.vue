@@ -7,6 +7,7 @@ import {
 	NavigationMenuList,
 } from '@/components/ui/navigation-menu';
 
+import UserDropdownMenu from '@/components/UserDropdownMenu.vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import emitter from '../eventBus';
 import { getCurrentUser, isAuthenticated } from '../services/auth';
@@ -46,11 +47,7 @@ onUnmounted(() => {
 							Home
 						</NavigationMenuLink>
 					</NavigationMenuItem>
-					<NavigationMenuItem>
-						<NavigationMenuLink href="/logout">
-							Logout
-						</NavigationMenuLink>
-					</NavigationMenuItem>
+					<UserDropdownMenu />
 				</template>
 				<template v-else>
 					<NavigationMenuItem>

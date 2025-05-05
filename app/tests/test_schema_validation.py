@@ -70,9 +70,9 @@ def test_favourite_schema_validation():
     schema = FavouriteRequestSchema()
 
     # Valid data
-    valid_data = {"userId": 123}
+    valid_data = {"profileId": 123}
     result = schema.load(valid_data)
-    assert result["userId"] == 123
+    assert result["profileId"] == 123
 
     # Invalid data - missing required fields
     invalid_data = {}
@@ -80,7 +80,7 @@ def test_favourite_schema_validation():
         schema.load(invalid_data)
 
     # Invalid data - wrong type
-    invalid_data = {"userId": "not-an-integer"}
+    invalid_data = {"profileId": "not-an-integer"}
     with pytest.raises(Exception) as e:
         schema.load(invalid_data)
 

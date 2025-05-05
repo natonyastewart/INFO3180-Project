@@ -1,5 +1,7 @@
-from flask import Blueprint, jsonify, request, g
+import os
+from flask import Blueprint, current_app, jsonify, request, g, send_from_directory
 from sqlalchemy import desc, func, select
+from sqlalchemy.orm import joinedload
 from marshmallow import ValidationError
 from app.models import Favourite, Profile, User, db
 from app.utils import generate_response, token_required, has_profile_required
@@ -10,12 +12,20 @@ from app.schemas import (
     SearchRequestSchema,
     UserSchema,
     FavouriteSchema,
-    TopFavouriteSchema,
     ProfileWithUserSchema,
-    UserInfoSchema,
 )
 
 profiles_bp = Blueprint("profiles", __name__)
+
+
+@profiles_bp.route("/uploads/<filename>", methods=["GET"])
+def get_upload(filename):
+    """Serve images from the uploads folder"""
+    return send_from_directory(
+        os.path.join(os.getcwd(), current_app.config["UPLOAD_FOLDER"]),
+        filename,
+        as_attachment=True,
+    )
 
 
 @profiles_bp.route("/profiles", methods=["GET", "POST"])
@@ -30,17 +40,33 @@ def handle_profiles():
 def get_self_profiles():
     user_id = g.current_user.id
 
+    # Use eager loading to fetch the user relationship in a single query
     profiles = db.session.scalars(
-        select(Profile).where(Profile.user_id_fk == user_id)
+        select(Profile)
+        .options(joinedload(Profile.user))
+        .where(Profile.user_id_fk == user_id)
     ).all()
 
-    profile_schema = ProfileSchema()
-    return [profile_schema.dump(profile.to_dict()) for profile in profiles]
+    # Use ProfileWithUserSchema to include user data in the response
+    profile_schema = ProfileWithUserSchema()
+    return [
+        profile_schema.dump(
+            {
+                **profile.to_dict(),
+                "user": {
+                    "id": profile.user.id,
+                    "name": profile.user.name,
+                    "photo": profile.user.photo,
+                },
+            }
+        )
+        for profile in profiles
+    ]
 
 
 def get_profiles():
     """
-    Get all profiles fdr authenticated user
+    Get all profiles for authenticated user
     """
     return jsonify(generate_response(data=get_self_profiles()))
 
@@ -71,8 +97,25 @@ def create_profile():
         db.session.add(profile)
         db.session.commit()
 
+        # Fetch the profile with user data and return it
+        created_profile = (
+            db.session.query(Profile).options(joinedload(Profile.user)).get(profile.id)
+        )
+
+        profile_schema = ProfileWithUserSchema()
+        profile_data = profile_schema.dump(
+            {
+                **created_profile.to_dict(),
+                "user": {
+                    "id": created_profile.user.id,
+                    "name": created_profile.user.name,
+                    "photo": created_profile.user.photo,
+                },
+            }
+        )
+
         return (
-            jsonify(generate_response(data=profile.to_dict())),
+            jsonify(generate_response(data=profile_data)),
             201,
         )
     except ValidationError as err:
@@ -89,7 +132,10 @@ def create_profile():
 @profiles_bp.route("/profiles/<profile_id>", methods=["GET"])
 @token_required
 def get_profiles_detail(profile_id):
-    profile = db.session.get(Profile, profile_id)
+    # Use joinedload to fetch the profile with its related user in a single query
+    profile = (
+        db.session.query(Profile).options(joinedload(Profile.user)).get(profile_id)
+    )
 
     if not profile:
         return (
@@ -102,9 +148,18 @@ def get_profiles_detail(profile_id):
             404,
         )
 
-    # Use marshmallow schema to serialize the profile
-    profile_schema = ProfileSchema()
-    profile_data = profile_schema.dump(profile)
+    # Use marshmallow schema to serialize the profile with user data
+    profile_schema = ProfileWithUserSchema()
+    profile_data = profile_schema.dump(
+        {
+            **profile.to_dict(),
+            "user": {
+                "id": profile.user.id,
+                "name": profile.user.name,
+                "photo": profile.user.photo,
+            },
+        }
+    )
 
     return jsonify(generate_response(data=profile_data))
 
@@ -129,13 +184,48 @@ def add_favourite():
 
     new_fav = Favourite(
         user_id_fk=g.current_user.id,
-        fav_user_id_fk=data["userId"],
+        fav_profile_id_fk=data["profileId"],
     )
     db.session.add(new_fav)
     db.session.commit()
     return (
         jsonify(generate_response(data=new_fav.to_dict())),
         201,
+    )
+
+
+@profiles_bp.route("/profiles/favourite/<int:fav_id>", methods=["DELETE"])
+@token_required
+@has_profile_required
+def remove_favourite(fav_id):
+    fav = db.session.get(Favourite, fav_id)
+    if not fav:
+        return (
+            jsonify(
+                generate_response(
+                    success=False,
+                    errors={"error": "Favourite not found"},
+                )
+            ),
+            404,
+        )
+
+    if fav.user_id_fk != g.current_user.id:
+        return (
+            jsonify(
+                generate_response(
+                    success=False,
+                    errors={"error": "Forbidden: You do not own this favourite"},
+                )
+            ),
+            403,
+        )
+
+    db.session.delete(fav)
+    db.session.commit()
+    return (
+        jsonify(generate_response(data={"message": "Favourite deleted successfully"})),
+        200,
     )
 
 
@@ -193,7 +283,8 @@ def get_profile_matches(profile_id):
         "family_oriented",
     ]
 
-    potential_matches_query = Profile.query
+    # Use eager loading to fetch user data in a single query
+    potential_matches_query = Profile.query.options(joinedload(Profile.user))
 
     potential_matches_query = potential_matches_query.filter(
         Profile.birth_year.between(min_birth_year, max_birth_year)
@@ -281,7 +372,9 @@ def search_profiles():
         )
 
     # Build query filters
-    query = Profile.query.join(User)  # Assuming Profile has user relationship
+    query = Profile.query.join(User).options(
+        joinedload(Profile.user)
+    )  # Eager load user data
     filters = []
 
     if validated_params.get("name"):
@@ -296,11 +389,28 @@ def search_profiles():
     filters.append(Profile.user_id_fk != g.current_user.id)
 
     # Apply filters and execute query
-    results = query.filter(*filters).all()
+    q = query.filter(*filters)
 
-    # Use marshmallow schema to serialize the results
-    profile_schema = ProfileSchema(many=True)
-    profile_data = profile_schema.dump(results)
+    if validated_params.get("limit"):
+        q = q.limit(validated_params["limit"])
+
+    results = q.all()
+
+    # Use marshmallow schema to serialize the results with user data
+    profile_schema = ProfileWithUserSchema(many=True)
+    profile_data = profile_schema.dump(
+        [
+            {
+                **profile.to_dict(),
+                "user": {
+                    "id": profile.user.id,
+                    "name": profile.user.name,
+                    "photo": profile.user.photo,
+                },
+            }
+            for profile in results
+        ]
+    )
 
     return jsonify(
         generate_response(
@@ -367,38 +477,39 @@ def get_top_favourites(threshold):
         return (
             jsonify(
                 generate_response(
-                    success=False, errors={"error": "N must be between 1 and 100"}
+                    success=False,
+                    errors={"error": "Threshold must be between 1 and 100"},
                 )
             ),
             400,
         )
 
-    # Get top favoured users with count
-    top_users = (
-        db.session.query(
-            Favourite.fav_user_id_fk,
-            func.count(Favourite.fav_user_id_fk).label("favourite_count"),
-            User.name,
-        )
-        .join(User, Favourite.fav_user_id_fk == User.id)  # <-- specify join condition
-        .group_by(Favourite.fav_user_id_fk, User.name)
-        .order_by(desc("favourite_count"))
-        .limit(threshold)
-        .all()
-    )
+    user_id = g.current_user.id
 
-    # Transform the results into the expected format
-    data = [
-        {
-            "user_id": user.fav_user_id_fk,
-            "name": user.name,
-            "favourite_count": user.favourite_count,
-        }
-        for user in top_users
-    ]
+    # Get top favoured profiles with count
+    fav_profiles = db.session.scalars(
+        select(Favourite)
+        .options(joinedload(Favourite.favourited_profile))
+        .where(Favourite.user_id_fk == user_id)
+        .limit(threshold)
+    ).all()
 
     # Use the schema to validate and serialize the data
-    schema = TopFavouriteSchema(many=True)
-    result = schema.dump(data)
+    schema = ProfileSchema(many=True)
+    result = []
+
+    for profile in fav_profiles:
+        profile_dict = profile.favourited_profile.to_dict()
+        profile_user_dict = profile.favourited_profile.user.to_dict()
+        profile_dict["profile"] = {
+            **profile.favourited_profile.to_dict(),
+            "user": {
+                "name": profile_user_dict.get("name"),
+                "photo": profile_user_dict.get("photo"),
+                "id": profile_user_dict.get("id"),
+                "username": profile_user_dict.get("username"),
+            },
+        }
+        result.append(profile_dict)
 
     return jsonify(generate_response(data=result))

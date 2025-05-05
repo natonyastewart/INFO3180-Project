@@ -60,7 +60,7 @@
 	--warning-foreground: oklch(0.25 0.05 90); /* Dark color for text on warning */
 
 	/* Borders and Inputs */
-	--border: oklch(0.9 0.01 260); /* Light cool gray border */
+	--border: oklch(0.86 0 0); /* Light cool gray border */
 	--input: oklch(0.95 0.01 260); /* Slightly lighter cool gray for input background */
 	--ring: oklch(0.65 0.14 262); /* Slightly lighter/desaturated primary blue for focus rings */
 

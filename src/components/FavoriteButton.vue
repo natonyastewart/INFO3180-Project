@@ -2,10 +2,11 @@
 import { Button } from '@/components/ui/button';
 import { HeartIcon } from 'lucide-vue-next';
 import { ref } from 'vue';
-import { addToFavorites } from '../services/api';
+import { addToFavorites, removeFavouriteProfile } from '../services/api';
 
 const props = defineProps<{
 	profileId: number;
+	favId?: number;
 	isFavorite: boolean;
 }>();
 
@@ -15,7 +16,9 @@ const isLoading = ref(false);
 async function toggleFavorite() {
 	try {
 		isLoading.value = true;
-		await addToFavorites({ userId: props.profileId });
+		if (!props.isFavorite)
+			await addToFavorites({ profileId: props.profileId });
+		else if (props.favId) await removeFavouriteProfile(props.favId);
 		emit('toggle');
 	} catch (error) {
 		console.error('Error toggling favorite:', error);

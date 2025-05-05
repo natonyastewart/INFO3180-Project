@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Profile, ProfileSearchParams } from '../services/api.types';
+import type { Favourite, Profile, ProfileSearchParams } from '../services/api.types';
 import type { UserData } from '../store';
 
 import { Button } from '@/components/ui/button';
@@ -9,29 +9,17 @@ import ProfileCard from '../components/ProfileCard.vue';
 import SearchForm from '../components/SearchForm.vue';
 import { getProfiles, getUserFavorites, searchProfiles } from '../services/api';
 import { getCurrentUser } from '../services/auth';
-// Define reactive state
+
 const profiles = ref<Profile[]>([]);
-const favorites = ref<number[]>([]);
+const favorites = ref<Favourite[]>([]);
 const loading = ref<boolean>(true);
 const isSearching = ref<boolean>(false);
 const hasProfiles = ref<boolean>(false);
 const currentUser = ref<UserData | null>(null);
 
-// Initialize data
-onMounted(async () => {
-	currentUser.value = getCurrentUser();
-	await checkUserProfile();
-
-	if (hasProfiles.value) {
-		await Promise.all([loadProfiles(), loadFavorites()]);
-	}
-});
-
-// Check if user has a profile
 const checkUserProfile = async (): Promise<void> => {
 	try {
 		if (currentUser.value?.id) {
-			// Check if user has at least one profile
 			const response = await getProfiles();
 			hasProfiles.value = response.data ? response.data.length > 0 : false;
 		}
@@ -41,16 +29,13 @@ const checkUserProfile = async (): Promise<void> => {
 	}
 };
 
-// Load profiles
 const loadProfiles = async (): Promise<void> => {
 	loading.value = true;
 	try {
-		const data = await searchProfiles();
-		// Filter out current user's profiles
+		const data = await searchProfiles({ limit: 4 });
 		if (data.data && Array.isArray(data.data)) {
 			profiles.value = data.data
-				.filter((profile: Profile) => profile.user_id !== currentUser.value?.id)
-				.slice(0, 4); // Get only the latest 4 profiles
+				.filter((profile: Profile) => profile.user_id !== currentUser.value?.id);
 		}
 	} catch (error) {
 		console.error('Error loading profiles:', error);
@@ -59,13 +44,12 @@ const loadProfiles = async (): Promise<void> => {
 	}
 };
 
-// Load favorites
 const loadFavorites = async (): Promise<void> => {
 	try {
 		if (currentUser.value?.id) {
 			const response = await getUserFavorites();
 			if (response.data && Array.isArray(response.data)) {
-				favorites.value = response.data.map(fav => fav.fav_user_id);
+				favorites.value = response.data;
 			}
 		}
 	} catch (error) {
@@ -73,14 +57,12 @@ const loadFavorites = async (): Promise<void> => {
 	}
 };
 
-// Perform search
 const performSearch = async (searchParams: ProfileSearchParams): Promise<void> => {
 	loading.value = true;
 	isSearching.value = true;
 
 	try {
 		const data = await searchProfiles(searchParams);
-		// Filter out current user's profiles
 		profiles.value = data.data ?? [];
 	} catch (error) {
 		console.error('Error searching profiles:', error);
@@ -88,6 +70,15 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 		loading.value = false;
 	}
 };
+
+onMounted(async () => {
+	currentUser.value = getCurrentUser();
+	await checkUserProfile();
+
+	if (hasProfiles.value) {
+		await Promise.all([loadProfiles(), loadFavorites()]);
+	}
+});
 </script>
 
 <template>
@@ -101,10 +92,14 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 				<SearchForm @search="performSearch" />
 
 				<div v-if="isSearching">
-					<h2>Search Results</h2>
+					<h2 class="text-2xl font-bold mb-3">
+						Search Results
+					</h2>
 				</div>
 				<div v-else>
-					<h2 class="text-xl font-semibold">Recent Profiles</h2>
+					<h2 class="text-xl font-semibold">
+						Recent Profiles
+					</h2>
 				</div>
 
 				<div v-if="loading" class="text-center my-5">
@@ -113,15 +108,16 @@ const performSearch = async (searchParams: ProfileSearchParams): Promise<void> =
 					</output>
 				</div>
 
-				<div v-else-if="profiles.length === 0" class="alert alert-info">
+				<Card v-else-if="profiles.length === 0" class="shadow-none border-dashed border-destructive bg-destructive/10 p-6 w-fit">
 					No profiles found matching your criteria.
-				</div>
+				</Card>
 
-				<div v-else class="grid grid-cols-1 phone-big:grid-cols-2 tablet:grid-cols-3 laptop:grid-cols-4 desktop:grid-cols-5">
+				<div v-else class="grid grid-cols-1 phone-big:grid-cols-2 tablet:grid-cols-3 laptop:grid-cols-4 desktop:grid-cols-5 gap-4">
 					<div v-for="profile in profiles" :key="profile.id" class="col">
 						<ProfileCard
 							:profile="profile"
-							:is-favorite="favorites.includes(profile.user_id)"
+							:is-favorite="favorites.filter(f => f.fav_profile_id === profile.id).length > 0"
+							:fav-id="favorites.filter(f => f.fav_profile_id === profile.id)[0]?.id"
 							@toggle-favorite="loadFavorites"
 						/>
 					</div>

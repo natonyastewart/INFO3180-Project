@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, g
 from sqlalchemy import select
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
@@ -64,19 +64,17 @@ def register():
 
     # Handle file upload if there's a photo
     photo_filename = None
+    print(len(request.files))
     if "photo" in request.files:
         photo = request.files["photo"]
-        if photo.filename:
-            # Secure the filename
-            filename = secure_filename(photo.filename)
-            # Generate a unique filename
-            photo_filename = (
-                f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{filename}"
-            )
-            # Save the file
-            photo.save(
-                os.path.join(current_app.config["UPLOAD_FOLDER"], photo_filename)
-            )
+        filename = secure_filename(photo.filename)
+        photo_filename = (
+            f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{filename}"
+        )
+        # Save the file
+        path = os.path.join(current_app.config["UPLOAD_FOLDER"], photo_filename)
+        print(f"Saving file to {path}")
+        photo.save(path)
 
     # Create new user
     new_user = User(

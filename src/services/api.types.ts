@@ -47,7 +47,7 @@ export const profileSearchParamsDto = z.object({
 
 // Favourite creation DTO - updated to match backend FavouriteRequestSchema
 export const createFavouriteDto = z.object({
-	userId: z.number().int().positive('User ID must be a positive integer'),
+	profileId: z.number().int().positive('Profile ID must be a positive integer'),
 });
 
 // Type exports from zod schemas
@@ -77,7 +77,7 @@ export interface UserInfo {
 // Profile interfaces
 export interface Profile {
 	id: number;
-	user_id: number;
+	user_id?: number;
 	description: string;
 	parish: string;
 	biography: string;
@@ -91,27 +91,16 @@ export interface Profile {
 	political: boolean;
 	religious: boolean;
 	family_oriented: boolean;
-}
-
-// Profile with user information interface
-export interface ProfileWithUser extends Omit<Profile, 'user_id'> {
-	user_id: number;
-	user: UserInfo;
+	user?: UserInfo;
 }
 
 // Favourite interfaces
 export interface Favourite {
 	id: number;
 	user_id: number;
-	fav_user_id: number;
+	fav_profile_id: number;
 	created_at: string;
-}
-
-// Top favourite user interface - updated to match backend TopFavouriteSchema
-export interface TopFavourite {
-	user_id: number;
-	name: string;
-	favourite_count: number;
+	profile?: Profile;
 }
 
 // API response interfaces
@@ -134,4 +123,5 @@ export interface ProfileSearchParams {
 	birth_year?: number;
 	sex?: string;
 	race?: string;
+	limit?: number;
 }

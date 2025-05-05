@@ -48,7 +48,7 @@ onUnmounted(() => {
 
 	<div id="app">
 		<NavBar />
-		<div class="mt-4 py-12 w-full">
+		<div class="w-full">
 			<router-view />
 		</div>
 	</div>

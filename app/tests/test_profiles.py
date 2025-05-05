@@ -44,7 +44,7 @@ def test_profile_create(client, auth_headers):
 
     assert response.status_code == 201
     assert data["success"] is True
-    assert data["data"]["user_id"] == 1
+    assert data["data"]["user"]["id"] == 1
 
     # Test fetching
     response = client.get("/api/profiles", headers=auth_headers)
@@ -93,7 +93,7 @@ def test_get_profiles_detail(client, auth_headers):
     assert response.status_code == 200
     assert data["success"] is True
     assert data["data"]["id"] == 1
-    assert data["data"]["user_id"] == 1
+    assert data["data"]["user"]["id"] == 1
     assert data["data"]["parish"] == "Kingston"
     assert data["data"]["sex"] == "Male"
 
@@ -105,7 +105,7 @@ def test_get_profiles_detail(client, auth_headers):
 def test_add_favourite(client, auth_headers):
     """Test adding a favourite."""
     # Test adding a new favourite
-    payload = {"userId": 3}  # User being favourited
+    payload = {"profileId": 3}  # User being favourited
 
     response = client.post(
         "/api/profiles/favourite",
@@ -119,11 +119,11 @@ def test_add_favourite(client, auth_headers):
     assert response.status_code == 201
     assert data["success"] is True
     assert data["data"]["user_id"] == 1
-    assert data["data"]["fav_user_id"] == 3
+    assert data["data"]["fav_profile_id"] == 3
 
     # Verify the favourite was added to the database
     with client.application.app_context():
-        favourite = Favourite.query.filter_by(user_id_fk=1, fav_user_id_fk=3).first()
+        favourite = Favourite.query.filter_by(user_id_fk=1, fav_profile_id_fk=3).first()
         assert favourite is not None
 
 
@@ -168,30 +168,31 @@ def test_search_profiles_no_filters(client, auth_headers):
 
     assert response.status_code == 200
     assert data["success"] is True
-    assert len(data["data"]) == 7  # Should return all profiles
-    assert "Found 7 matching profiles" in data["message"]
+    assert len(data["data"]) == 6  # Should return all profiles but self
+    assert len(list(filter(lambda x: x["user"]["id"] == 1, data["data"]))) == 0
+    assert "Found 6 matching profiles" in data["message"]
 
 
 def test_search_profiles_by_name(client, auth_headers):
     """Test searching profiles by name."""
-    response = client.get("/api/search?name=Test User 1", headers=auth_headers)
+    response = client.get("/api/search?name=Test User 2", headers=auth_headers)
     data = json.loads(response.data)
 
     assert response.status_code == 200
     assert data["success"] is True
     assert len(data["data"]) == 1
-    assert data["data"][0]["user_id"] == 1
+    assert data["data"][0]["user"]["id"] == 2
 
 
 def test_search_profiles_by_birth_year(client, auth_headers):
     """Test searching profiles by birth year."""
-    response = client.get("/api/search?birth_year=1990", headers=auth_headers)
+    response = client.get("/api/search?birth_year=1988", headers=auth_headers)
     data = json.loads(response.data)
 
     assert response.status_code == 200
     assert data["success"] is True
     assert len(data["data"]) == 1
-    assert data["data"][0]["birth_year"] == 1990
+    assert data["data"][0]["birth_year"] == 1988
 
 
 def test_search_profiles_by_sex(client, auth_headers):
@@ -212,19 +213,19 @@ def test_search_profiles_by_race(client, auth_headers):
 
     assert response.status_code == 200
     assert data["success"] is True
-    assert len(data["data"]) == 3
+    assert len(data["data"]) == 2
     assert data["data"][0]["race"] == "Black"
 
 
 def test_search_profiles_combined_filters(client, auth_headers):
     """Test searching profiles with multiple filters."""
-    response = client.get("/api/search?sex=Male&race=Black", headers=auth_headers)
+    response = client.get("/api/search?sex=Female&race=Black", headers=auth_headers)
     data = json.loads(response.data)
 
     assert response.status_code == 200
     assert data["success"] is True
-    assert len(data["data"]) == 1
-    assert data["data"][0]["sex"] == "Male"
+    assert len(data["data"]) == 2
+    assert data["data"][0]["sex"] == "Female"
     assert data["data"][0]["race"] == "Black"
 
 
@@ -256,7 +257,7 @@ def test_get_user_favourites(client, auth_headers):
     assert data["success"] is True
     assert len(data["data"]) == 1
     assert data["data"][0]["user_id"] == 1
-    assert data["data"][0]["fav_user_id"] == 2
+    assert data["data"][0]["fav_profile_id"] == 1
 
 
 def test_get_top_favourites_valid(client, auth_headers):
@@ -277,7 +278,7 @@ def test_get_top_favourites_invalid_threshold(client, auth_headers):
 
     assert response.status_code == 400
     assert data["success"] is False
-    assert "N must be between 1 and 100" in data["errors"]["error"]
+    assert "Threshold must be between 1 and 100" in data["errors"]["error"]
 
     # Test with threshold above maximum
     response = client.get("/api/users/favourites/101", headers=auth_headers)
@@ -285,7 +286,7 @@ def test_get_top_favourites_invalid_threshold(client, auth_headers):
 
     assert response.status_code == 400
     assert data["success"] is False
-    assert "N must be between 1 and 100" in data["errors"]["error"]
+    assert "Threshold must be between 1 and 100" in data["errors"]["error"]
 
 
 def test_unauthenticated_requests(client):
@@ -344,7 +345,7 @@ def test_profile_required_routes(client, app):
             payload = {
                 "user_id": 10,
                 "user_id_fk": user_no_profile.id,
-                "fav_user_id_fk": 1,
+                "fav_profile_id_fk": 1,
             }
             response = client.post(
                 endpoint,
